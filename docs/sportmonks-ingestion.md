@@ -37,6 +37,8 @@ Authorization: Bearer $CRON_SECRET
 9. `POST /api/sync/standings`
 10. `POST /api/sync/transfers`
 
+`positions` reads Sportmonks `/types` and stores position-like type rows because Football API v3 exposes positions through definitions/types rather than a standalone `/positions` endpoint.
+
 `teams` reads the current seasons for `SPORTMONKS_TARGET_LEAGUE_NAMES` from Supabase and then calls `GET /teams/seasons/{seasonId}`.
 
 `squads` reads the stored club-season memberships and calls `GET /squads/seasons/{seasonId}/teams/{teamId}`. Included player data is upserted into `players`, so the app avoids a broad `/players` sync during the trial.

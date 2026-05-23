@@ -27,7 +27,6 @@ export const sportmonksEndpoints = {
   transfersByPlayer: (playerId: number | string) => `/transfers/players/${playerId}`,
   transfersByTeam: (teamId: number | string) => `/transfers/teams/${teamId}`,
   countries: `${SPORTMONKS_CORE_BASE_URL}/countries`,
-  positions: "/positions",
   types: "/types"
 } as const;
 
