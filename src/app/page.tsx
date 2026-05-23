@@ -22,6 +22,7 @@ export default function HomePage() {
         </div>
         <div className="hidden items-center gap-2 md:flex">
           <Button variant="ghost" asChild><a href="/players">Players</a></Button>
+          <Button variant="ghost" asChild><a href="/clubs">Clubs</a></Button>
           <Button variant="ghost" asChild><a href="/admin/sync">Sync Admin</a></Button>
           <Button variant="secondary">Request demo</Button>
         </div>
