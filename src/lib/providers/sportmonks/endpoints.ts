@@ -1,0 +1,38 @@
+export const SPORTMONKS_BASE_URL = "https://api.sportmonks.com/api/v3/football";
+
+export const sportmonksEndpoints = {
+  leagues: "/leagues",
+  seasons: "/seasons",
+  teams: "/teams",
+  team: (teamId: number | string) => `/teams/${teamId}`,
+  teamSearch: (query: string) => `/teams/search/${encodeURIComponent(query)}`,
+  squadsByTeam: (teamId: number | string) => `/squads/teams/${teamId}`,
+  squadsBySeasonTeam: (seasonId: number | string, teamId: number | string) => `/squads/seasons/${seasonId}/teams/${teamId}`,
+  players: "/players",
+  player: (playerId: number | string) => `/players/${playerId}`,
+  playerSearch: (query: string) => `/players/search/${encodeURIComponent(query)}`,
+  latestPlayers: "/players/latest",
+  playerSeasonStats: (seasonId: number | string) => `/statistics/seasons/players/${seasonId}`,
+  fixtures: "/fixtures",
+  fixture: (fixtureId: number | string) => `/fixtures/${fixtureId}`,
+  fixturesByDate: (date: string) => `/fixtures/date/${date}`,
+  fixturesBetween: (startDate: string, endDate: string) => `/fixtures/between/${startDate}/${endDate}`,
+  fixturesBetweenForTeam: (startDate: string, endDate: string, teamId: number | string) =>
+    `/fixtures/between/${startDate}/${endDate}/teams/${teamId}`,
+  standingsBySeason: (seasonId: number | string) => `/standings/seasons/${seasonId}`,
+  transfers: "/transfers",
+  latestTransfers: "/transfers/latest",
+  transfersByPlayer: (playerId: number | string) => `/transfers/players/${playerId}`,
+  transfersByTeam: (teamId: number | string) => `/transfers/teams/${teamId}`,
+  countries: "/countries",
+  positions: "/positions",
+  types: "/types"
+} as const;
+
+export const sportmonksIncludes = {
+  playerList: "position;nationality;teams.team",
+  playerDetail: "position;nationality;teams.team;statistics.details.type;transfers.fromTeam;transfers.toTeam",
+  squad: "player.position;player.nationality;player.statistics.details",
+  fixtures: "participants;scores;state;league;round",
+  transfers: "player;fromTeam;toTeam;type"
+} as const;

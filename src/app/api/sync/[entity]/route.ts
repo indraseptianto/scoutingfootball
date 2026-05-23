@@ -1,0 +1,16 @@
+import { NextRequest, NextResponse } from "next/server";
+import { isSyncEntity, syncJobs } from "@/lib/providers/sportmonks/sync";
+
+export async function POST(request: NextRequest, context: { params: Promise<{ entity: string }> }) {
+  const { entity } = await context.params;
+
+  if (!isSyncEntity(entity)) {
+    return NextResponse.json({ error: `Unknown sync entity: ${entity}` }, { status: 404 });
+  }
+
+  const payload = await request.json().catch(() => ({}));
+  const job = syncJobs[entity] as (teamId?: string, seasonId?: string) => Promise<unknown>;
+  const result = (await job(payload.teamId, payload.seasonId)) as { status: "success" | "failed" };
+
+  return NextResponse.json(result, { status: result.status === "success" ? 200 : 500 });
+}
