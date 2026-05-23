@@ -134,7 +134,7 @@ export default async function PlayersPage({ searchParams }: { searchParams: Prom
                   key={`${player.sportmonks_id}-${player.club_name ?? "club"}`}
                   className="grid min-w-[860px] grid-cols-[1.4fr_0.9fr_1fr_1fr_0.7fr_0.8fr] border-b border-border py-4 text-sm last:border-0"
                 >
-                  <span className="font-medium">{player.display_name}</span>
+                  <a className="font-medium hover:text-accent" href={`/players/${player.sportmonks_id}`}>{player.display_name}</a>
                   <span>{player.position_name ?? "Unknown"}</span>
                   <span className="text-muted">{player.nationality_name ?? "Unknown"}</span>
                   <span className="text-muted">{player.club_name ?? "Unassigned"}</span>
@@ -195,9 +195,7 @@ async function getPlayerDatabase(filters: { q: string; position: string; club: s
     const positions = Array.from(new Set((positionsResult.data ?? []).map((row) => row.position_name as string).filter(Boolean)));
     const clubs = Array.from(new Set((clubsResult.data ?? []).map((row) => row.name as string).filter(Boolean)));
 
-    let squadQuery = supabase
-      .from("squad_players")
-      .select("player_sportmonks_id,team_sportmonks_id", { count: "exact" });
+    let clubFilteredPlayerIds: number[] | null = null;
 
     if (filters.club) {
       const { data: matchingClub } = await supabase
@@ -206,23 +204,21 @@ async function getPlayerDatabase(filters: { q: string; position: string; club: s
         .eq("name", filters.club)
         .maybeSingle();
 
-      squadQuery = squadQuery.eq("team_sportmonks_id", matchingClub?.sportmonks_id ?? -1);
+      const { data: matchingSquads } = await supabase
+        .from("squad_players")
+        .select("player_sportmonks_id")
+        .eq("team_sportmonks_id", matchingClub?.sportmonks_id ?? -1);
+
+      clubFilteredPlayerIds = Array.from(new Set((matchingSquads ?? []).map((row) => Number(row.player_sportmonks_id)).filter(Boolean)));
     }
-
-    const { data: filteredSquads, count: filteredTotal, error: squadsError } = await squadQuery
-      .order("player_sportmonks_id", { ascending: true })
-      .range(from, to);
-
-    if (squadsError) throw squadsError;
-
-    const playerIds = Array.from(new Set((filteredSquads ?? []).map((row) => Number(row.player_sportmonks_id)).filter(Boolean)));
-    const teamIds = Array.from(new Set((filteredSquads ?? []).map((row) => Number(row.team_sportmonks_id)).filter(Boolean)));
 
     let playerQuery = supabase
       .from("players")
-      .select("sportmonks_id,display_name,position_name,nationality_name,hidden_gem_score")
-      .in("sportmonks_id", playerIds);
+      .select("sportmonks_id,display_name,position_name,nationality_name,hidden_gem_score", { count: "exact" });
 
+    if (clubFilteredPlayerIds) {
+      playerQuery = clubFilteredPlayerIds.length > 0 ? playerQuery.in("sportmonks_id", clubFilteredPlayerIds) : playerQuery.eq("sportmonks_id", -1);
+    }
     if (filters.position) playerQuery = playerQuery.eq("position_name", filters.position);
     if (filters.q) {
       playerQuery = playerQuery.or(
@@ -230,28 +226,37 @@ async function getPlayerDatabase(filters: { q: string; position: string; club: s
       );
     }
 
-    const [{ data: playerRows, error: playersError }, { data: clubRows }] = await Promise.all([
-      playerIds.length > 0 ? playerQuery : Promise.resolve({ data: [], error: null }),
-      teamIds.length > 0
-        ? supabase.from("clubs").select("sportmonks_id,name").in("sportmonks_id", teamIds)
-        : Promise.resolve({ data: [] })
-    ]);
+    const { data: playerRows, count: filteredTotal, error: playersError } = await playerQuery
+      .order("display_name", { ascending: true })
+      .range(from, to);
 
     if (playersError) throw playersError;
 
+    const playerIds = Array.from(new Set((playerRows ?? []).map((row) => Number(row.sportmonks_id)).filter(Boolean)));
+    const { data: squadRows } = playerIds.length > 0
+      ? await supabase
+          .from("squad_players")
+          .select("player_sportmonks_id,team_sportmonks_id")
+          .in("player_sportmonks_id", playerIds)
+      : { data: [] };
+
+    const teamIds = Array.from(new Set((squadRows ?? []).map((row) => Number(row.team_sportmonks_id)).filter(Boolean)));
+    const { data: clubRows } =
+      teamIds.length > 0
+        ? await supabase.from("clubs").select("sportmonks_id,name").in("sportmonks_id", teamIds)
+        : { data: [] };
+
     const playerById = new Map(((playerRows ?? []) as PlayerRow[]).map((player) => [player.sportmonks_id, player]));
+    const teamByPlayer = new Map((squadRows ?? []).map((row) => [Number(row.player_sportmonks_id), Number(row.team_sportmonks_id)]));
     const clubByTeam = new Map((clubRows ?? []).map((row) => [Number(row.sportmonks_id), row.name as string]));
 
-    const players = (filteredSquads ?? [])
-      .map((squad) => {
-        const player = playerById.get(Number(squad.player_sportmonks_id));
-        if (!player) return null;
+    const players = Array.from(playerById.values())
+      .map((player) => {
         return {
           ...player,
-          club_name: clubByTeam.get(Number(squad.team_sportmonks_id)) ?? null
+          club_name: clubByTeam.get(teamByPlayer.get(player.sportmonks_id) ?? 0) ?? null
         };
       })
-      .filter((player): player is PlayerRow => Boolean(player))
       .sort((a, b) => a.display_name.localeCompare(b.display_name));
 
     return {

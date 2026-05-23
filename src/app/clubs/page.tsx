@@ -64,7 +64,7 @@ export default async function ClubsPage({ searchParams }: { searchParams: Promis
                 <div key={club.sportmonks_id} className="rounded-md border border-border bg-white/[0.03] p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="font-semibold">{club.name}</h2>
+                      <a className="font-semibold hover:text-accent" href={`/clubs/${club.sportmonks_id}`}>{club.name}</a>
                       <p className="mt-1 text-sm text-muted">{club.short_code ?? `ID ${club.sportmonks_id}`}</p>
                     </div>
                     <Users size={18} className="text-accent" />
