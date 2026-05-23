@@ -34,3 +34,4 @@ The migration seeds:
 - League Two
 
 League IDs can be corrected later if Sportmonks returns different IDs in your plan. The sync layer still prefers API data over hardcoded names.
+Target league rows intentionally start with names only. Fill `league_sportmonks_id` after the first `/api/sync/leagues` response confirms the IDs available in your subscription.

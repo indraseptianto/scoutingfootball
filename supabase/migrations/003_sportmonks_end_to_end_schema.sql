@@ -12,11 +12,12 @@ create table if not exists public.sportmonks_api_cache (
 
 create table if not exists public.sportmonks_target_leagues (
   id uuid primary key default gen_random_uuid(),
-  league_sportmonks_id bigint not null unique,
+  league_sportmonks_id bigint unique,
   name text not null,
   priority int not null default 100,
   active boolean not null default true,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  unique(name)
 );
 
 create table if not exists public.continents (
@@ -366,14 +367,13 @@ create policy "Authenticated read team statistics" on public.team_statistics for
 drop policy if exists "Authenticated read player team history" on public.player_team_history;
 create policy "Authenticated read player team history" on public.player_team_history for select to authenticated using (true);
 
-insert into public.sportmonks_target_leagues (league_sportmonks_id, name, priority)
+insert into public.sportmonks_target_leagues (name, priority)
 values
-  (564, 'La Liga', 10),
-  (8, 'Premier League', 20),
-  (9, 'Championship', 30),
-  (12, 'League One', 40),
-  (14, 'League Two', 50)
-on conflict (league_sportmonks_id) do update
-set name = excluded.name,
-    priority = excluded.priority,
+  ('La Liga', 10),
+  ('Premier League', 20),
+  ('Championship', 30),
+  ('League One', 40),
+  ('League Two', 50)
+on conflict (name) do update
+set priority = excluded.priority,
     active = true;
