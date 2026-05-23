@@ -17,6 +17,8 @@ Run these in order on a fresh Supabase project:
 - Teams: clubs, club-season memberships, coaches
 - Players: players, squads, player team history, player stats
 - Fixtures: fixtures, participants, scores, states, events, lineups
+- Player match statistics: `player_match_statistics` stores one row per player per fixture/team with match date, opponent,
+  score/result, minutes, rating, passing, shooting, xG, xA, dribbling, possession, defensive, and goalkeeper fields.
 - Tables: standings
 - Transfers: transfers
 - Statistics: statistic details, Sportmonks type reference

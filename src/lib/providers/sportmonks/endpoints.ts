@@ -35,5 +35,6 @@ export const sportmonksIncludes = {
   playerDetail: "position;nationality;teams.team;statistics.details.type;transfers.fromTeam;transfers.toTeam",
   squad: "player.position;player.nationality;player.statistics.details",
   fixtures: "participants;scores;state;league;round",
+  fixturePlayerStats: "participants;scores;state;league;round;lineups.details.type;lineups.type;lineups.position;lineups.player",
   transfers: "player;fromTeam;toTeam;type"
 } as const;

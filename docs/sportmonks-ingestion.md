@@ -43,7 +43,10 @@ Authorization: Bearer $CRON_SECRET
 
 `squads` reads the stored club-season memberships and calls `GET /squads/seasons/{seasonId}/teams/{teamId}`. Included player data is upserted into `players`, so the app avoids a broad `/players` sync during the trial.
 
-`statistics` loops over the current seasons for the five target leagues.
+`statistics` reads completed fixtures from the local Supabase fixture cache, refetches each fixture from Sportmonks with
+`include=lineups.details.type;lineups.type;lineups.position;lineups.player`, and upserts match-by-match player output into
+`player_match_statistics`. The default batch is intentionally small (`SPORTMONKS_STATS_FIXTURE_LIMIT`, default 10, max 25)
+to avoid Vercel function timeouts and to respect the 2,000-call trial limit.
 
 `transfers` only syncs the first page of `/transfers/latest` by default to avoid Vercel Hobby function timeouts during the trial.
 
