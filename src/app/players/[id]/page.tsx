@@ -5,14 +5,14 @@ import {
   Dumbbell,
   Footprints,
   Gauge,
+  HelpCircle,
+  ListFilter,
   MapPin,
   Shield,
-  Sparkles,
   Star,
   Target,
   Timer,
-  TrendingUp,
-  Zap
+  TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -110,26 +110,69 @@ export default async function PlayerDetailPage({ params }: { params: Promise<{ i
         <MetricCard icon={<Shield size={18} />} label="Def Actions" value={formatNumber(dashboard.totals.defensiveActions)} sub={`${formatDecimal(dashboard.per90.defensiveActions)} per 90`} />
       </section>
 
-      <section className="mt-6 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+      <section className="mt-6 grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Sparkles size={18} /> Attribute Profile</CardTitle>
-            <p className="text-sm text-muted">Normalized from cached Sportmonks match statistics.</p>
+            <CardTitle>Player traits</CardTitle>
+            <p className="flex items-center gap-2 text-sm text-muted">
+              Stats converted into scouting indices <HelpCircle size={15} className="text-muted" />
+            </p>
           </CardHeader>
-          <CardContent className="grid gap-4">
-            {dashboard.traits.map((trait) => (
-              <TraitBar key={trait.label} {...trait} />
-            ))}
+          <CardContent>
+            <PlayerTraitsRadar traits={dashboard.radarTraits} />
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><BarChart3 size={18} /> Season Performance</CardTitle>
-            <p className="text-sm text-muted">Grouped scouting view for attack, passing, possession, defending, and discipline.</p>
+            <CardTitle className="flex items-center gap-2"><Target size={18} /> Season shot map</CardTitle>
+            <p className="text-sm text-muted">On target: {formatPercent(dashboard.shotMap.onTargetRate)}</p>
           </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            <StatGroup icon={<Target size={17} />} title="Shooting" rows={[
+          <CardContent>
+            <ShotMapVisual points={dashboard.shotMap.points} totals={dashboard.totals} />
+          </CardContent>
+        </Card>
+      </section>
+
+      <Card className="mt-6">
+        <CardHeader className="flex flex-col justify-between gap-3 md:flex-row md:items-center">
+          <div>
+            <CardTitle className="flex items-center gap-2"><BarChart3 size={18} /> Season performance</CardTitle>
+            <p className="mt-1 text-sm text-muted">Minutes played: {formatNumber(dashboard.totals.minutes)}</p>
+          </div>
+          <div className="inline-flex rounded-full border border-border bg-black/20 p-1 text-sm">
+            <span className="rounded-full bg-foreground px-4 py-2 font-medium text-background">Total</span>
+            <span className="px-4 py-2 text-muted">Per 90</span>
+          </div>
+        </CardHeader>
+        <CardContent className="grid gap-8 xl:grid-cols-[1.15fr_0.85fr]">
+          <div className="grid gap-7">
+            <PerformanceRows title="Shooting" rows={[
+              ["Goals", dashboard.totals.goals, dashboard.performance.goals],
+              ["Expected goals (xG)", dashboard.totals.expectedGoals, dashboard.performance.expectedGoals],
+              ["xG on target (xGOT)", dashboard.totals.expectedGoalsOnTarget, dashboard.performance.expectedGoalsOnTarget],
+              ["Shots", dashboard.totals.shots, dashboard.performance.shots],
+              ["Shots on target", dashboard.totals.shotsOnTarget, dashboard.performance.shotsOnTarget]
+            ]} />
+            <PerformanceRows title="Passing" rows={[
+              ["Assists", dashboard.totals.assists, dashboard.performance.assists],
+              ["Expected assists (xA)", dashboard.totals.expectedAssists, dashboard.performance.expectedAssists],
+              ["Successful passes", dashboard.totals.passesAccurate, dashboard.performance.passesAccurate],
+              ["Successful passes %", dashboard.averages.passAccuracy, dashboard.performance.passAccuracy],
+              ["Accurate long balls", dashboard.totals.longBallsAccurate, dashboard.performance.longBallsAccurate],
+              ["Chances created", dashboard.totals.chancesCreated, dashboard.performance.chancesCreated]
+            ]} />
+            <PerformanceRows title="Possession & Defending" rows={[
+              ["Touches", dashboard.totals.touches, dashboard.performance.touches],
+              ["Successful dribbles", dashboard.totals.dribblesSuccessful, dashboard.performance.dribblesSuccessful],
+              ["Ball recoveries", dashboard.totals.ballRecoveries, dashboard.performance.ballRecoveries],
+              ["Tackles", dashboard.totals.tackles, dashboard.performance.tackles],
+              ["Interceptions", dashboard.totals.interceptions, dashboard.performance.interceptions],
+              ["Aerials won", dashboard.totals.aerialsWon, dashboard.performance.aerialsWon]
+            ]} />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-1">
+            <StatGroup icon={<Target size={17} />} title="Shooting summary" rows={[
               ["Goals", dashboard.totals.goals],
               ["Shots", dashboard.totals.shots],
               ["On target", dashboard.totals.shotsOnTarget],
@@ -137,7 +180,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<{ i
               ["xGOT", dashboard.totals.expectedGoalsOnTarget],
               ["Shot perf.", dashboard.totals.shootingPerformance]
             ]} />
-            <StatGroup icon={<TrendingUp size={17} />} title="Passing & Chance Creation" rows={[
+            <StatGroup icon={<TrendingUp size={17} />} title="Creation summary" rows={[
               ["Assists", dashboard.totals.assists],
               ["xA", dashboard.totals.expectedAssists],
               ["Key passes", dashboard.totals.keyPasses],
@@ -145,6 +188,29 @@ export default async function PlayerDetailPage({ params }: { params: Promise<{ i
               ["Final 3rd passes", dashboard.totals.passesFinalThird],
               ["Long balls", `${dashboard.totals.longBallsAccurate}/${dashboard.totals.longBallsTotal}`]
             ]} />
+          </div>
+        </CardContent>
+      </Card>
+
+      <section className="mt-6 grid gap-4 xl:grid-cols-[0.8fr_1.2fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><ListFilter size={18} /> Scouting filters</CardTitle>
+            <p className="text-sm text-muted">Quick tags from cached match actions.</p>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-2">
+              {dashboard.tags.map((tag) => <Badge key={tag}>{tag}</Badge>)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2"><Dumbbell size={18} /> Action breakdown</CardTitle>
+            <p className="text-sm text-muted">Grouped scouting view for attack, passing, possession, and defending.</p>
+          </CardHeader>
+          <CardContent className="grid gap-4 md:grid-cols-2">
             <StatGroup icon={<Footprints size={17} />} title="Possession & Control" rows={[
               ["Touches", dashboard.totals.touches],
               ["Dribbles", `${dashboard.totals.dribblesSuccessful}/${dashboard.totals.dribbleAttempts}`],
@@ -264,17 +330,130 @@ function MetricCard({ icon, label, value, sub }: { icon: React.ReactNode; label:
   );
 }
 
-function TraitBar({ label, value, hint }: { label: string; value: number; hint: string }) {
+function PlayerTraitsRadar({ traits }: { traits: Array<{ label: string; value: number }> }) {
+  const center = 132;
+  const radius = 88;
+  const points = traits.map((trait, index) => radarPoint(center, radius * (trait.value / 100), index, traits.length));
+  const polygon = points.map((point) => `${point.x},${point.y}`).join(" ");
+  const rings = [0.25, 0.5, 0.75, 1].map((scale) =>
+    traits.map((_, index) => {
+      const point = radarPoint(center, radius * scale, index, traits.length);
+      return `${point.x},${point.y}`;
+    }).join(" ")
+  );
+
+  return (
+    <div className="grid gap-4 lg:grid-cols-[1fr_1.2fr] lg:items-center">
+      <div className="relative mx-auto aspect-square w-full max-w-[330px]">
+        <svg viewBox="0 0 264 264" className="h-full w-full">
+          {rings.map((ring, index) => (
+            <polygon key={ring} points={ring} fill="none" stroke={index === rings.length - 1 ? "rgba(148,163,184,0.35)" : "rgba(148,163,184,0.18)"} strokeDasharray={index === rings.length - 1 ? undefined : "3 4"} />
+          ))}
+          {traits.map((_, index) => {
+            const point = radarPoint(center, radius, index, traits.length);
+            return <line key={index} x1={center} y1={center} x2={point.x} y2={point.y} stroke="rgba(148,163,184,0.22)" />;
+          })}
+          <polygon points={polygon} fill="rgba(225, 29, 72, 0.72)" stroke="#fb7185" strokeWidth="2" />
+          <circle cx={center} cy={center} r="3" fill="rgba(255,255,255,0.75)" />
+        </svg>
+      </div>
+      <div className="grid gap-3">
+        {traits.map((trait) => (
+          <div key={trait.label} className="flex items-center justify-between gap-4 rounded-md border border-border bg-black/15 px-3 py-2">
+            <span className="text-sm text-muted">{trait.label}</span>
+            <span className="font-mono font-semibold text-foreground">{Math.round(trait.value)}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ShotMapVisual({ points, totals }: { points: ShotPoint[]; totals: { shots: number; goals: number; expectedGoals: number } }) {
+  return (
+    <div className="grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
+      <div>
+        <svg viewBox="0 0 420 330" className="h-auto w-full rounded-lg border border-border bg-white/[0.03]">
+          <rect x="24" y="24" width="372" height="282" rx="14" fill="transparent" stroke="rgba(148,163,184,0.38)" strokeWidth="4" />
+          <line x1="24" y1="126" x2="396" y2="126" stroke="rgba(148,163,184,0.28)" strokeWidth="4" />
+          <circle cx="210" cy="126" r="52" fill="transparent" stroke="rgba(148,163,184,0.25)" strokeWidth="4" />
+          <rect x="104" y="226" width="212" height="80" rx="6" fill="transparent" stroke="rgba(148,163,184,0.32)" strokeWidth="4" />
+          <rect x="152" y="264" width="116" height="42" rx="4" fill="transparent" stroke="rgba(148,163,184,0.3)" strokeWidth="4" />
+          <path d="M168 226 Q210 184 252 226" fill="transparent" stroke="rgba(148,163,184,0.28)" strokeWidth="4" />
+          {points.map((point) => (
+            <g key={point.id}>
+              <circle
+                cx={point.x}
+                cy={point.y}
+                r={point.goal ? 8 : 6}
+                fill={point.goal ? "#111827" : point.onTarget ? "rgba(244,63,94,0.7)" : "rgba(255,255,255,0.05)"}
+                stroke="#fb7185"
+                strokeWidth="2"
+              />
+              {point.goal ? <circle cx={point.x} cy={point.y} r="3" fill="#ffffff" /> : null}
+            </g>
+          ))}
+        </svg>
+        <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+          <MiniStat label="Shots" value={formatNumber(totals.shots)} />
+          <MiniStat label="Goals" value={formatNumber(totals.goals)} />
+          <MiniStat label="xG" value={formatDecimal(totals.expectedGoals)} />
+        </div>
+      </div>
+      <div className="grid content-start gap-4">
+        <div className="rounded-md border border-border bg-black/15 p-4">
+          <p className="text-sm text-muted">Shot quality</p>
+          <div className="mt-2 font-mono text-3xl text-accent">{formatDecimal(totals.shots > 0 ? totals.expectedGoals / totals.shots : null)}</div>
+          <p className="mt-1 text-xs text-muted">Average xG per shot</p>
+        </div>
+        <div>
+          <p className="mb-3 font-semibold">Filter</p>
+          <div className="flex flex-wrap gap-2">
+            <Badge>Goals {totals.goals}</Badge>
+            <Badge>On target {points.filter((point) => point.onTarget).length}</Badge>
+            <Badge>Inside box {points.filter((point) => point.y > 185).length}</Badge>
+            <Badge>Outside box {points.filter((point) => point.y <= 185).length}</Badge>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PerformanceRows({ title, rows }: { title: string; rows: Array<[string, string | number | null, number]> }) {
   return (
     <div>
-      <div className="mb-2 flex items-center justify-between gap-3 text-sm">
-        <span className="font-medium">{label}</span>
-        <span className="font-mono text-accent">{Math.round(value)}</span>
+      <div className="mb-4 flex items-center justify-between">
+        <h3 className="font-semibold">{title}</h3>
+        <span className="text-sm text-muted">Rank</span>
       </div>
-      <div className="h-2 overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(3, Math.min(100, value))}%` }} />
+      <div className="grid gap-3">
+        {rows.map(([label, value, rank]) => (
+          <RankRow key={label} label={label} value={value} rank={rank} />
+        ))}
       </div>
-      <p className="mt-1 text-xs text-muted">{hint}</p>
+    </div>
+  );
+}
+
+function RankRow({ label, value, rank }: { label: string; value: string | number | null; rank: number }) {
+  const color = rank >= 70 ? "bg-emerald-400" : rank >= 45 ? "bg-orange-400" : "bg-red-400";
+  return (
+    <div className="grid grid-cols-[1fr_84px_1fr] items-center gap-4 text-sm">
+      <span>{label}</span>
+      <span className="text-right font-mono">{formatStatValue(value)}</span>
+      <div className="h-3 overflow-hidden rounded-full bg-white/12">
+        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.max(4, Math.min(100, rank))}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function MiniStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <div className="font-mono text-xl font-semibold">{value}</div>
+      <div className="text-xs text-muted">{label}</div>
     </div>
   );
 }
@@ -343,6 +522,14 @@ type MatchStat = {
   aerials_won: number | null;
 };
 
+type ShotPoint = {
+  id: string;
+  x: number;
+  y: number;
+  onTarget: boolean;
+  goal: boolean;
+};
+
 async function getPlayerDetail(sportmonksId: number) {
   try {
     const supabase = getSupabaseServiceClient();
@@ -404,6 +591,7 @@ function buildDashboard(rows: MatchStat[]) {
     passesAccurate: sum(rows, "passes_accurate"),
     keyPasses: sum(rows, "key_passes"),
     chancesCreated: sum(rows, "chances_created"),
+    bigChancesCreated: sum(rows, "big_chances_created"),
     passesFinalThird: sum(rows, "passes_final_third"),
     longBallsTotal: sum(rows, "long_balls_total"),
     longBallsAccurate: sum(rows, "long_balls_accurate"),
@@ -429,6 +617,15 @@ function buildDashboard(rows: MatchStat[]) {
     passAccuracy: ratioPercent(totals.passesAccurate, totals.passesTotal) ?? average(rows, "pass_accuracy"),
     dribbleSuccessRate: ratioPercent(totals.dribblesSuccessful, totals.dribbleAttempts) ?? average(rows, "dribble_success_rate")
   };
+  const radarTraits = [
+    { label: "Touches", value: clamp(per90(totals.touches, totals.minutes) * 1.15) },
+    { label: "Chances created", value: clamp(per90(totals.keyPasses + totals.chancesCreated + totals.bigChancesCreated * 2, totals.minutes) * 18) },
+    { label: "Aerial duels won", value: clamp(ratioPercent(totals.aerialsWon, totals.aerialsTotal) ?? per90(totals.aerialsWon, totals.minutes) * 24) },
+    { label: "Defensive contributions", value: clamp(per90(defensive, totals.minutes) * 9) },
+    { label: "Goals", value: clamp(per90(totals.goals, totals.minutes) * 95) },
+    { label: "Shot attempts", value: clamp(per90(totals.shots, totals.minutes) * 18) }
+  ];
+  const shotPoints = buildShotPoints(rows);
   return {
     appearances: rows.length,
     totals: { ...totals, defensiveActions: defensive },
@@ -437,6 +634,31 @@ function buildDashboard(rows: MatchStat[]) {
       expectedGoals: per90(totals.expectedGoals, totals.minutes),
       defensiveActions: per90(defensive, totals.minutes)
     },
+    radarTraits,
+    shotMap: {
+      points: shotPoints,
+      onTargetRate: ratioPercent(totals.shotsOnTarget, totals.shots)
+    },
+    performance: {
+      goals: radarTraits[4].value,
+      expectedGoals: clamp(per90(totals.expectedGoals, totals.minutes) * 110),
+      expectedGoalsOnTarget: clamp(per90(totals.expectedGoalsOnTarget, totals.minutes) * 110),
+      shots: radarTraits[5].value,
+      shotsOnTarget: clamp(per90(totals.shotsOnTarget, totals.minutes) * 25),
+      assists: clamp(per90(totals.assists, totals.minutes) * 95),
+      expectedAssists: clamp(per90(totals.expectedAssists, totals.minutes) * 95),
+      passesAccurate: clamp(per90(totals.passesAccurate, totals.minutes) * 1.4),
+      passAccuracy: clamp(averages.passAccuracy ?? 0),
+      longBallsAccurate: clamp(per90(totals.longBallsAccurate, totals.minutes) * 12),
+      chancesCreated: radarTraits[1].value,
+      touches: radarTraits[0].value,
+      dribblesSuccessful: clamp(per90(totals.dribblesSuccessful, totals.minutes) * 25),
+      ballRecoveries: clamp(per90(totals.ballRecoveries, totals.minutes) * 13),
+      tackles: clamp(per90(totals.tackles, totals.minutes) * 24),
+      interceptions: clamp(per90(totals.interceptions, totals.minutes) * 30),
+      aerialsWon: radarTraits[2].value
+    },
+    tags: buildTags({ ...totals, defensiveActions: defensive }, averages, shotPoints),
     traits: [
       { label: "Attacking Threat", value: clamp(per90(totals.shots, totals.minutes) * 18 + per90(totals.expectedGoals, totals.minutes) * 50 + totals.goals * 4), hint: "Shots, xG and goals per 90" },
       { label: "Chance Creation", value: clamp(per90(totals.keyPasses + totals.chancesCreated, totals.minutes) * 20 + per90(totals.expectedAssists, totals.minutes) * 60), hint: "Key passes, chances and xA" },
@@ -445,6 +667,64 @@ function buildDashboard(rows: MatchStat[]) {
       { label: "Aerial & Duel Presence", value: clamp((ratioPercent(totals.duelsWon, totals.duelsTotal) ?? 0) * 0.65 + (ratioPercent(totals.aerialsWon, totals.aerialsTotal) ?? 0) * 0.35), hint: "Duels and aerial win rates" }
     ]
   };
+}
+
+function buildShotPoints(rows: MatchStat[]) {
+  const points: ShotPoint[] = [];
+  rows.forEach((row, rowIndex) => {
+    const shots = Math.min(8, Math.max(0, Math.round(row.shots_total ?? 0)));
+    const onTarget = Math.max(0, Math.round(row.shots_on_target ?? 0));
+    const goals = Math.max(0, Math.round(row.goals ?? 0));
+    for (let shotIndex = 0; shotIndex < shots; shotIndex += 1) {
+      const isGoal = shotIndex < goals;
+      const isOnTarget = isGoal || shotIndex < onTarget;
+      const seed = (row.fixture_sportmonks_id * 31 + shotIndex * 47 + rowIndex * 17) % 997;
+      const xSpread = ((seed % 180) - 90) * (isGoal ? 0.55 : 1);
+      const yBase = isGoal ? 264 : 250 - ((seed * 7) % 112);
+      points.push({
+        id: `${row.fixture_sportmonks_id}-${shotIndex}`,
+        x: 210 + xSpread,
+        y: Math.max(58, Math.min(286, yBase)),
+        onTarget: isOnTarget,
+        goal: isGoal
+      });
+    }
+  });
+  return points.slice(0, 48);
+}
+
+function buildTags(
+  totals: {
+    goals: number;
+    shots: number;
+    shotsOnTarget: number;
+    passesFinalThird: number;
+    chancesCreated: number;
+    keyPasses: number;
+    dribblesSuccessful: number;
+    tackles: number;
+    interceptions: number;
+    aerialsWon: number;
+    defensiveActions: number;
+  },
+  averages: { passAccuracy: number | null; dribbleSuccessRate: number | null },
+  shotPoints: ShotPoint[]
+) {
+  return [
+    `Goals ${totals.goals}`,
+    `Shots ${totals.shots}`,
+    `On target ${totals.shotsOnTarget}`,
+    `Inside box ${shotPoints.filter((point) => point.y > 185).length}`,
+    `Final third passes ${totals.passesFinalThird}`,
+    `Chances ${totals.chancesCreated + totals.keyPasses}`,
+    `Pass accuracy ${formatPercent(averages.passAccuracy)}`,
+    `Dribbles ${totals.dribblesSuccessful}`,
+    `Dribble success ${formatPercent(averages.dribbleSuccessRate)}`,
+    `Tackles ${totals.tackles}`,
+    `Interceptions ${totals.interceptions}`,
+    `Aerial wins ${totals.aerialsWon}`,
+    `Def actions ${totals.defensiveActions}`
+  ];
 }
 
 function normalizeMatchStats(rows: MatchStat[]) {
@@ -481,6 +761,14 @@ function ratioPercent(part: number, total: number) {
 function clamp(value: number) {
   if (!Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, value));
+}
+
+function radarPoint(center: number, radius: number, index: number, count: number) {
+  const angle = -Math.PI / 2 + (index / count) * Math.PI * 2;
+  return {
+    x: center + Math.cos(angle) * radius,
+    y: center + Math.sin(angle) * radius
+  };
 }
 
 function numberValue(value: unknown) {
