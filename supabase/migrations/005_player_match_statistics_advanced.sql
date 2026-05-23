@@ -1,0 +1,17 @@
+alter table public.player_match_statistics add column if not exists expected_goals_on_target numeric;
+alter table public.player_match_statistics add column if not exists shooting_performance numeric;
+alter table public.player_match_statistics add column if not exists chances_created int;
+alter table public.player_match_statistics add column if not exists big_chances_created int;
+alter table public.player_match_statistics add column if not exists passes_final_third int;
+alter table public.player_match_statistics add column if not exists backward_passes int;
+alter table public.player_match_statistics add column if not exists ball_recoveries int;
+alter table public.player_match_statistics add column if not exists dispossessed int;
+alter table public.player_match_statistics add column if not exists turn_overs int;
+alter table public.player_match_statistics add column if not exists duels_lost int;
+alter table public.player_match_statistics add column if not exists duels_won_percentage numeric;
+alter table public.player_match_statistics add column if not exists aerials_lost int;
+alter table public.player_match_statistics add column if not exists aerials_won_percentage numeric;
+alter table public.player_match_statistics add column if not exists tackles_won int;
+alter table public.player_match_statistics add column if not exists tackles_won_percentage numeric;
+alter table public.player_match_statistics add column if not exists long_balls_won_percentage numeric;
+alter table public.player_match_statistics add column if not exists accurate_crosses_percentage numeric;
