@@ -2,7 +2,19 @@ import { Activity, DatabaseZap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-const jobs = ["leagues", "seasons", "teams", "players", "squads", "fixtures", "standings", "transfers", "statistics"];
+const jobs = [
+  "countries",
+  "positions",
+  "leagues",
+  "seasons",
+  "teams",
+  "players",
+  "squads",
+  "fixtures",
+  "standings",
+  "transfers",
+  "statistics"
+];
 
 export default function AdminSyncPage() {
   return (

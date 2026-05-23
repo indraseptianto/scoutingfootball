@@ -5,6 +5,7 @@ export const sportmonksEndpoints = {
   seasons: "/seasons",
   teams: "/teams",
   team: (teamId: number | string) => `/teams/${teamId}`,
+  teamsBySeason: (seasonId: number | string) => `/teams/seasons/${seasonId}`,
   teamSearch: (query: string) => `/teams/search/${encodeURIComponent(query)}`,
   squadsByTeam: (teamId: number | string) => `/squads/teams/${teamId}`,
   squadsBySeasonTeam: (seasonId: number | string, teamId: number | string) => `/squads/seasons/${seasonId}/teams/${teamId}`,

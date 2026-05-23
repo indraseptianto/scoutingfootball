@@ -16,14 +16,12 @@ type SyncConfig<T> = {
   normalize: (row: T) => Record<string, unknown>;
 };
 
-export async function runSportmonksSync<T extends Record<string, unknown>>(config: SyncConfig<T>): Promise<SyncJobResult> {
+export async function startSyncLog(entity: string) {
   const supabase = getSupabaseServiceClient();
-  let recordsProcessed = 0;
-
-  const logStart = await supabase
+  const { data } = await supabase
     .from("data_sync_logs")
     .insert({
-      entity: config.entity,
+      entity,
       status: "running",
       provider: "sportmonks",
       started_at: new Date().toISOString()
@@ -31,7 +29,27 @@ export async function runSportmonksSync<T extends Record<string, unknown>>(confi
     .select("id")
     .single();
 
-  const logId = logStart.data?.id;
+  return data?.id as string | undefined;
+}
+
+export async function finishSyncLog(logId: string | undefined, status: "success" | "failed", recordsProcessed: number, error?: string) {
+  if (!logId) return;
+  const supabase = getSupabaseServiceClient();
+  await supabase
+    .from("data_sync_logs")
+    .update({
+      status,
+      records_processed: recordsProcessed,
+      error_message: error ?? null,
+      finished_at: new Date().toISOString()
+    })
+    .eq("id", logId);
+}
+
+export async function runSportmonksSync<T extends Record<string, unknown>>(config: SyncConfig<T>): Promise<SyncJobResult> {
+  const supabase = getSupabaseServiceClient();
+  let recordsProcessed = 0;
+  const logId = await startSyncLog(config.entity);
 
   try {
     await sportmonksFetchPaginated<T>(config.endpoint, config.query, async (rows) => {
@@ -53,18 +71,4 @@ export async function runSportmonksSync<T extends Record<string, unknown>>(confi
     await finishSyncLog(logId, "failed", recordsProcessed, message);
     return { entity: config.entity, status: "failed", recordsProcessed, error: message };
   }
-}
-
-async function finishSyncLog(logId: string | undefined, status: "success" | "failed", recordsProcessed: number, error?: string) {
-  if (!logId) return;
-  const supabase = getSupabaseServiceClient();
-  await supabase
-    .from("data_sync_logs")
-    .update({
-      status,
-      records_processed: recordsProcessed,
-      error_message: error ?? null,
-      finished_at: new Date().toISOString()
-    })
-    .eq("id", logId);
 }

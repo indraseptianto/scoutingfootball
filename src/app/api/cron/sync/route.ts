@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { isSyncEntity, syncJobs, type SyncEntity } from "@/lib/providers/sportmonks/sync";
 
 const cronBatches: Record<string, SyncEntity[]> = {
-  "daily-reference": ["leagues", "seasons", "teams"],
-  "daily-market": ["players", "squads", "fixtures", "standings", "transfers", "statistics"]
+  "daily-reference": ["countries", "positions", "leagues", "seasons", "teams"],
+  "daily-market": ["squads", "fixtures", "standings", "transfers", "statistics"]
 };
 
 export async function GET(request: NextRequest) {

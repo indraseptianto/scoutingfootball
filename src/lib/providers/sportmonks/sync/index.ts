@@ -1,6 +1,8 @@
+import { syncCountries } from "./countries";
 import { syncFixtures } from "./fixtures";
 import { syncLeagues } from "./leagues";
 import { syncPlayers } from "./players";
+import { syncPositions } from "./positions";
 import { syncSeasons } from "./seasons";
 import { syncSquads } from "./squads";
 import { syncStandings } from "./standings";
@@ -9,6 +11,8 @@ import { syncTeams } from "./teams";
 import { syncTransfers } from "./transfers";
 
 export const syncJobs = {
+  countries: syncCountries,
+  positions: syncPositions,
   leagues: syncLeagues,
   seasons: syncSeasons,
   teams: syncTeams,

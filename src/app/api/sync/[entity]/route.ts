@@ -9,8 +9,14 @@ export async function POST(request: NextRequest, context: { params: Promise<{ en
   }
 
   const payload = await request.json().catch(() => ({}));
-  const job = syncJobs[entity] as (teamId?: string, seasonId?: string) => Promise<unknown>;
-  const result = (await job(payload.teamId, payload.seasonId)) as { status: "success" | "failed" };
+  const job = syncJobs[entity] as (...args: string[]) => Promise<unknown>;
+  const result = (await runJob(entity, job, payload)) as { status: "success" | "failed" };
 
   return NextResponse.json(result, { status: result.status === "success" ? 200 : 500 });
+}
+
+function runJob(entity: string, job: (...args: string[]) => Promise<unknown>, payload: { teamId?: string; seasonId?: string }) {
+  if (entity === "squads") return job(payload.teamId ?? "", payload.seasonId ?? "");
+  if (entity === "standings" || entity === "statistics") return job(payload.seasonId ?? "");
+  return job();
 }

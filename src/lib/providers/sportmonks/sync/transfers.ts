@@ -5,7 +5,7 @@ import { runSportmonksSync } from "./core";
 export function syncTransfers() {
   return runSportmonksSync({
     entity: "transfers",
-    endpoint: sportmonksEndpoints.transfers,
+    endpoint: sportmonksEndpoints.latestTransfers,
     table: "transfers",
     query: { include: sportmonksIncludes.transfers },
     normalize: normalizeTransfer
