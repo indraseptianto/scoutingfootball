@@ -8,3 +8,5 @@
 6. Trigger initial syncs from `/admin/sync` or by POSTing to `/api/sync/leagues`, `/teams`, `/players`, `/squads`, `/fixtures`, `/standings`, `/transfers`, and `/statistics`.
 
 Sportmonks Football API v3 is the only football data provider in this codebase.
+
+The checked-in `vercel.json` uses two daily cron jobs so it can deploy on Vercel Hobby/Free projects. On Vercel Pro, you can split these back into more frequent per-entity cron jobs.

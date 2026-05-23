@@ -28,3 +28,14 @@ npm run dev
 ```
 
 Then open `http://localhost:3000`.
+
+## Docker
+
+The project includes a production Dockerfile using Next.js standalone output:
+
+```bash
+docker build -t scoutflow-ai .
+docker run -p 3000:3000 --env-file .env.local scoutflow-ai
+```
+
+Vercel normally deploys this as a standard Next.js project from `package.json`; the Dockerfile is included for platforms that expect a container image.
