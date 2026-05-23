@@ -38,7 +38,7 @@ async function syncTeamsForSeason(seasonId: number, leagueId: number): Promise<S
   try {
     await sportmonksFetchPaginated<Record<string, unknown>>(
       sportmonksEndpoints.teamsBySeason(seasonId),
-      { include: "country;league;activeseason" },
+      { include: "country;venue" },
       async (rows) => {
         const clubs = rows.map(normalizeTeam).filter((row) => row.sportmonks_id);
         if (clubs.length === 0) return;

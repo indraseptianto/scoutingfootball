@@ -45,6 +45,8 @@ Authorization: Bearer $CRON_SECRET
 
 `statistics` loops over the current seasons for the five target leagues.
 
+`transfers` only syncs the first page of `/transfers/latest` by default to avoid Vercel Hobby function timeouts during the trial.
+
 ## Cron
 
 The checked-in Vercel cron is intentionally conservative for Hobby/Free plans:
