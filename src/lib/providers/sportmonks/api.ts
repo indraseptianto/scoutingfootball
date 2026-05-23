@@ -32,6 +32,6 @@ export const sportmonksApi = {
   transfersByPlayer: (playerId: number | string) => sportmonksFetch(sportmonksEndpoints.transfersByPlayer(playerId)),
   transfersByTeam: (teamId: number | string) => sportmonksFetch(sportmonksEndpoints.transfersByTeam(teamId)),
   countries: () => sportmonksFetch(sportmonksEndpoints.countries),
-  positions: () => sportmonksFetch(sportmonksEndpoints.positions),
+  positions: () => sportmonksFetch(sportmonksEndpoints.types),
   types: () => sportmonksFetch(sportmonksEndpoints.types)
 };
