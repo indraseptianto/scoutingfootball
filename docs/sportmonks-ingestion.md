@@ -12,6 +12,12 @@ The app uses Sportmonks Football API v3 only. Data should be synced from officia
 
 ## Recommended Order
 
+Manual sync endpoints require:
+
+```txt
+Authorization: Bearer $CRON_SECRET
+```
+
 1. `POST /api/sync/countries`
 2. `POST /api/sync/positions`
 3. `POST /api/sync/leagues`

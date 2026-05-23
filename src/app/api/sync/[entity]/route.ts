@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { isSyncEntity, syncJobs } from "@/lib/providers/sportmonks/sync";
 
 export async function POST(request: NextRequest, context: { params: Promise<{ entity: string }> }) {
+  if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+    return new Response("Unauthorized", { status: 401 });
+  }
+
   const { entity } = await context.params;
 
   if (!isSyncEntity(entity)) {
