@@ -50,7 +50,7 @@ type FixtureDetail = JsonRecord & {
 const COMPLETED_STATES = new Set(["FT", "AET", "FT_PEN", "LIVE", "HT", "BREAK"]);
 const DEFAULT_FIXTURE_LIMIT = 10;
 
-export async function syncStatistics(seasonId = process.env.SPORTMONKS_DEFAULT_SEASON_ID) {
+export async function syncStatistics(seasonId = process.env.SPORTMONKS_DEFAULT_SEASON_ID, mode = "") {
   const supabase = getSupabaseServiceClient();
   const entity = "statistics";
   const logId = await startSyncLog(entity);
@@ -71,7 +71,9 @@ export async function syncStatistics(seasonId = process.env.SPORTMONKS_DEFAULT_S
     const { data: fixtures, error } = await query;
     if (error) throw error;
 
-    const candidateFixtures = await prioritizeUnsyncedFixtures((fixtures ?? []) as FixtureCacheRow[], limit);
+    const cachedFixtures = (fixtures ?? []) as FixtureCacheRow[];
+    const candidateFixtures =
+      mode === "refresh" ? cachedFixtures.slice(0, limit) : await prioritizeUnsyncedFixtures(cachedFixtures, limit);
 
     for (const fixture of candidateFixtures) {
       recordsProcessed += await syncFixturePlayerStatistics(fixture);

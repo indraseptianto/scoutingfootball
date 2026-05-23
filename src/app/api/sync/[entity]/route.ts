@@ -19,8 +19,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ en
   return NextResponse.json(result, { status: result.status === "success" ? 200 : 500 });
 }
 
-function runJob(entity: string, job: (...args: string[]) => Promise<unknown>, payload: { teamId?: string; seasonId?: string }) {
+function runJob(entity: string, job: (...args: string[]) => Promise<unknown>, payload: { teamId?: string; seasonId?: string; refresh?: boolean }) {
   if (entity === "squads") return job(payload.teamId ?? "", payload.seasonId ?? "");
-  if (entity === "standings" || entity === "statistics") return job(payload.seasonId ?? "");
+  if (entity === "standings") return job(payload.seasonId ?? "");
+  if (entity === "statistics") return job(payload.seasonId ?? "", payload.refresh ? "refresh" : "");
   return job();
 }
