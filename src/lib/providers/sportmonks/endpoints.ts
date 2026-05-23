@@ -1,4 +1,5 @@
-export const SPORTMONKS_BASE_URL = "https://api.sportmonks.com/api/v3/football";
+export const SPORTMONKS_BASE_URL = "https://api.sportmonks.com/v3/football";
+export const SPORTMONKS_CORE_BASE_URL = "https://api.sportmonks.com/v3/core";
 
 export const sportmonksEndpoints = {
   leagues: "/leagues",
@@ -25,7 +26,7 @@ export const sportmonksEndpoints = {
   latestTransfers: "/transfers/latest",
   transfersByPlayer: (playerId: number | string) => `/transfers/players/${playerId}`,
   transfersByTeam: (teamId: number | string) => `/transfers/teams/${teamId}`,
-  countries: "/countries",
+  countries: `${SPORTMONKS_CORE_BASE_URL}/countries`,
   positions: "/positions",
   types: "/types"
 } as const;

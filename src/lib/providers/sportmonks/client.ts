@@ -26,12 +26,17 @@ function getSportmonksToken() {
   return token;
 }
 
+function getSportmonksAuthorizationHeader() {
+  const token = getSportmonksToken();
+  return token.startsWith("Bearer ") ? token : token;
+}
+
 export async function sportmonksFetch<T>(
   path: string,
   query: SportmonksQuery = {},
   options: { cacheTtlMs?: number; retries?: number } = {}
 ) {
-  const url = new URL(`${SPORTMONKS_BASE_URL}${path}`);
+  const url = new URL(path.startsWith("http") ? path : `${SPORTMONKS_BASE_URL}${path}`);
   Object.entries(query).forEach(([key, value]) => {
     if (value !== undefined && value !== "") url.searchParams.set(key, String(value));
   });
@@ -47,7 +52,7 @@ export async function sportmonksFetch<T>(
 
     const response = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${getSportmonksToken()}`,
+        Authorization: getSportmonksAuthorizationHeader(),
         Accept: "application/json"
       },
       cache: "no-store"

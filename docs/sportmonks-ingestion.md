@@ -10,6 +10,14 @@ Target leagues for the Starter trial:
 
 The app uses Sportmonks Football API v3 only. Data should be synced from official API endpoints into Supabase and served from Supabase to the UI.
 
+Sportmonks v3 uses:
+
+- Football base URL: `https://api.sportmonks.com/v3/football`
+- Core base URL for countries: `https://api.sportmonks.com/v3/core`
+- Authorization header: `Authorization: SPORTMONKS_API_TOKEN`
+
+Do not prefix the token with `Bearer` unless Sportmonks explicitly shows your token that way.
+
 ## Recommended Order
 
 Manual sync endpoints require:
