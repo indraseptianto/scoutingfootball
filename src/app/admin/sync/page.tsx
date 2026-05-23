@@ -13,6 +13,7 @@ const jobs = [
   "fixtures",
   "standings",
   "transfers",
+  "season-statistics",
   "statistics"
 ];
 

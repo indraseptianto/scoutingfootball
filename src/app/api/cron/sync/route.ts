@@ -3,7 +3,7 @@ import { isSyncEntity, syncJobs, type SyncEntity } from "@/lib/providers/sportmo
 
 const cronBatches: Record<string, SyncEntity[]> = {
   "daily-reference": ["countries", "positions", "leagues", "seasons", "teams"],
-  "daily-market": ["squads", "fixtures", "standings", "transfers", "statistics"]
+  "daily-market": ["squads", "fixtures", "standings", "transfers", "season-statistics", "statistics"]
 };
 
 export async function GET(request: NextRequest) {

@@ -43,7 +43,7 @@ export default async function PlayerDetailPage({ params }: { params: Promise<{ i
     );
   }
 
-  const dashboard = buildDashboard(data.matchStats);
+  const dashboard = buildDashboard(data.matchStats, data.seasonStats[0] ?? null);
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-8">
@@ -522,6 +522,16 @@ type MatchStat = {
   aerials_won: number | null;
 };
 
+type SeasonPlayerStat = Omit<MatchStat, "fixture_sportmonks_id" | "team_sportmonks_id" | "fixture_name" | "round_name" | "starting_at" | "location" | "team_score" | "opponent_score" | "result"> & {
+  player_sportmonks_id: number;
+  team_sportmonks_id: number | null;
+  league_sportmonks_id: number | null;
+  season_sportmonks_id: number;
+  appearances: number | null;
+  starts: number | null;
+  source: string | null;
+};
+
 type ShotPoint = {
   id: string;
   x: number;
@@ -540,7 +550,7 @@ async function getPlayerDetail(sportmonksId: number) {
       .maybeSingle();
 
     if (error) throw error;
-    if (!player) return { player: null, squad: null, club: null, matchStats: [] as MatchStat[], error: null };
+    if (!player) return { player: null, squad: null, club: null, matchStats: [] as MatchStat[], seasonStats: [] as SeasonPlayerStat[], error: null };
 
     const { data: squad } = await supabase
       .from("squad_players")
@@ -564,51 +574,66 @@ async function getPlayerDetail(sportmonksId: number) {
       .order("starting_at", { ascending: false })
       .limit(30);
 
-    return { player, squad, club, matchStats: normalizeMatchStats((matchStats ?? []) as MatchStat[]), error: null };
+    const { data: seasonStats } = await supabase
+      .from("season_player_statistics")
+      .select("player_sportmonks_id,team_sportmonks_id,league_sportmonks_id,season_sportmonks_id,appearances,starts,minutes,rating,goals,assists,shots_total,shots_on_target,expected_goals,expected_goals_on_target,expected_assists,shooting_performance,passes_total,passes_accurate,pass_accuracy,key_passes,chances_created,big_chances_created,passes_final_third,crosses_total,crosses_accurate,long_balls_total,long_balls_accurate,touches,dribble_attempts,dribbles_successful,dribble_success_rate,possession_lost,dispossessed,ball_recoveries,tackles,interceptions,clearances,blocks,duels_total,duels_won,aerials_total,aerials_won,source")
+      .eq("player_sportmonks_id", sportmonksId)
+      .order("minutes", { ascending: false, nullsFirst: false })
+      .limit(3);
+
+    return {
+      player,
+      squad,
+      club,
+      matchStats: normalizeMatchStats((matchStats ?? []) as MatchStat[]),
+      seasonStats: normalizeSeasonStats((seasonStats ?? []) as SeasonPlayerStat[]),
+      error: null
+    };
   } catch (error) {
     return {
       player: null,
       squad: null,
       club: null,
       matchStats: [] as MatchStat[],
+      seasonStats: [] as SeasonPlayerStat[],
       error: error instanceof Error ? error.message : "Unable to load player."
     };
   }
 }
 
-function buildDashboard(rows: MatchStat[]) {
+function buildDashboard(rows: MatchStat[], season: SeasonPlayerStat | null) {
   const totals = {
-    minutes: sum(rows, "minutes"),
-    goals: sum(rows, "goals"),
-    assists: sum(rows, "assists"),
-    shots: sum(rows, "shots_total"),
-    shotsOnTarget: sum(rows, "shots_on_target"),
-    expectedGoals: sum(rows, "expected_goals"),
-    expectedGoalsOnTarget: sum(rows, "expected_goals_on_target"),
-    expectedAssists: sum(rows, "expected_assists"),
-    shootingPerformance: sum(rows, "shooting_performance"),
-    passesTotal: sum(rows, "passes_total"),
-    passesAccurate: sum(rows, "passes_accurate"),
-    keyPasses: sum(rows, "key_passes"),
-    chancesCreated: sum(rows, "chances_created"),
-    bigChancesCreated: sum(rows, "big_chances_created"),
-    passesFinalThird: sum(rows, "passes_final_third"),
-    longBallsTotal: sum(rows, "long_balls_total"),
-    longBallsAccurate: sum(rows, "long_balls_accurate"),
-    touches: sum(rows, "touches"),
-    dribbleAttempts: sum(rows, "dribble_attempts"),
-    dribblesSuccessful: sum(rows, "dribbles_successful"),
-    possessionLost: sum(rows, "possession_lost"),
-    dispossessed: sum(rows, "dispossessed"),
-    ballRecoveries: sum(rows, "ball_recoveries"),
-    tackles: sum(rows, "tackles"),
-    interceptions: sum(rows, "interceptions"),
-    clearances: sum(rows, "clearances"),
-    blocks: sum(rows, "blocks"),
-    duelsTotal: sum(rows, "duels_total"),
-    duelsWon: sum(rows, "duels_won"),
-    aerialsTotal: sum(rows, "aerials_total"),
-    aerialsWon: sum(rows, "aerials_won")
+    minutes: seasonValue(season, rows, "minutes"),
+    goals: seasonValue(season, rows, "goals"),
+    assists: seasonValue(season, rows, "assists"),
+    shots: seasonValue(season, rows, "shots_total"),
+    shotsOnTarget: seasonValue(season, rows, "shots_on_target"),
+    expectedGoals: seasonValue(season, rows, "expected_goals"),
+    expectedGoalsOnTarget: seasonValue(season, rows, "expected_goals_on_target"),
+    expectedAssists: seasonValue(season, rows, "expected_assists"),
+    shootingPerformance: seasonValue(season, rows, "shooting_performance"),
+    passesTotal: seasonValue(season, rows, "passes_total"),
+    passesAccurate: seasonValue(season, rows, "passes_accurate"),
+    keyPasses: seasonValue(season, rows, "key_passes"),
+    chancesCreated: seasonValue(season, rows, "chances_created"),
+    bigChancesCreated: seasonValue(season, rows, "big_chances_created"),
+    passesFinalThird: seasonValue(season, rows, "passes_final_third"),
+    longBallsTotal: seasonValue(season, rows, "long_balls_total"),
+    longBallsAccurate: seasonValue(season, rows, "long_balls_accurate"),
+    touches: seasonValue(season, rows, "touches"),
+    dribbleAttempts: seasonValue(season, rows, "dribble_attempts"),
+    dribblesSuccessful: seasonValue(season, rows, "dribbles_successful"),
+    possessionLost: seasonValue(season, rows, "possession_lost"),
+    dispossessed: seasonValue(season, rows, "dispossessed"),
+    ballRecoveries: seasonValue(season, rows, "ball_recoveries"),
+    tackles: seasonValue(season, rows, "tackles"),
+    interceptions: seasonValue(season, rows, "interceptions"),
+    clearances: seasonValue(season, rows, "clearances"),
+    blocks: seasonValue(season, rows, "blocks"),
+    duelsTotal: seasonValue(season, rows, "duels_total"),
+    duelsWon: seasonValue(season, rows, "duels_won"),
+    aerialsTotal: seasonValue(season, rows, "aerials_total"),
+    aerialsWon: seasonValue(season, rows, "aerials_won")
   };
   const defensive = totals.tackles + totals.interceptions + totals.clearances + totals.blocks + totals.ballRecoveries;
   const averages = {
@@ -625,9 +650,9 @@ function buildDashboard(rows: MatchStat[]) {
     { label: "Goals", value: clamp(per90(totals.goals, totals.minutes) * 95) },
     { label: "Shot attempts", value: clamp(per90(totals.shots, totals.minutes) * 18) }
   ];
-  const shotPoints = buildShotPoints(rows);
+  const shotPoints = buildShotPoints(rows, totals);
   return {
-    appearances: rows.length,
+    appearances: season?.appearances ?? rows.length,
     totals: { ...totals, defensiveActions: defensive },
     averages,
     per90: {
@@ -669,9 +694,19 @@ function buildDashboard(rows: MatchStat[]) {
   };
 }
 
-function buildShotPoints(rows: MatchStat[]) {
+function buildShotPoints(rows: MatchStat[], totals?: { shots: number; shotsOnTarget: number; goals: number }) {
   const points: ShotPoint[] = [];
-  rows.forEach((row, rowIndex) => {
+  const sourceRows =
+    rows.length > 0
+      ? rows
+      : [{
+          fixture_sportmonks_id: 0,
+          shots_total: totals?.shots ?? 0,
+          shots_on_target: totals?.shotsOnTarget ?? 0,
+          goals: totals?.goals ?? 0
+        } as MatchStat];
+
+  sourceRows.forEach((row, rowIndex) => {
     const shots = Math.min(8, Math.max(0, Math.round(row.shots_total ?? 0)));
     const onTarget = Math.max(0, Math.round(row.shots_on_target ?? 0));
     const goals = Math.max(0, Math.round(row.goals ?? 0));
@@ -738,6 +773,24 @@ function normalizeMatchStats(rows: MatchStat[]) {
     }
     return normalized;
   });
+}
+
+function normalizeSeasonStats(rows: SeasonPlayerStat[]) {
+  return rows.map((row) => {
+    const normalized = { ...row };
+    for (const key of Object.keys(normalized) as Array<keyof SeasonPlayerStat>) {
+      const value = normalized[key];
+      if (typeof value === "string" && value.trim() !== "" && Number.isFinite(Number(value))) {
+        (normalized[key] as unknown) = Number(value);
+      }
+    }
+    return normalized;
+  });
+}
+
+function seasonValue(season: SeasonPlayerStat | null, rows: MatchStat[], key: keyof MatchStat) {
+  const value = season?.[key as keyof SeasonPlayerStat];
+  return typeof value === "number" ? value : sum(rows, key);
 }
 
 function sum(rows: MatchStat[], key: keyof MatchStat) {
