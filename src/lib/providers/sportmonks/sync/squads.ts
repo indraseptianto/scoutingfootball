@@ -87,5 +87,3 @@ async function syncSquadForTeamSeason(teamId: number, seasonId: number): Promise
     return { entity, status: "failed", recordsProcessed, error: message };
   }
 }
-  });
-}
