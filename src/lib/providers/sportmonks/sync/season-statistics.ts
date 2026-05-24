@@ -25,12 +25,13 @@ export async function syncSeasonStatistics(seasonId = process.env.SPORTMONKS_DEF
     results.push(await syncSeasonStatisticTarget(target));
   }
 
-  const failed = results.find((result) => result.status === "failed");
+  const failures = results.filter((result) => result.status === "failed");
+  const recordsProcessed = results.reduce((sum, result) => sum + result.recordsProcessed, 0);
   return {
     entity: "season-statistics",
-    status: failed ? "failed" : "success",
-    recordsProcessed: results.reduce((sum, result) => sum + result.recordsProcessed, 0),
-    error: failed?.error
+    status: failures.length > 0 && recordsProcessed === 0 ? "failed" : "success",
+    recordsProcessed,
+    error: failures.length > 0 ? failures.map((result) => `${result.entity}: ${result.error}`).join(" | ") : undefined
   } satisfies SyncJobResult;
 }
 
@@ -69,7 +70,7 @@ async function syncSeasonStatisticTarget(target: SeasonTarget): Promise<SyncJobR
     await finishSyncLog(logId, "success", recordsProcessed);
     return { entity, status: "success", recordsProcessed };
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown season statistics sync error";
+    const message = serializeError(error);
     await finishSyncLog(logId, "failed", recordsProcessed, message);
     return { entity, status: "failed", recordsProcessed, error: message };
   }
@@ -183,11 +184,14 @@ async function upsertMatchAggregateSeasonStats(target: SeasonTarget) {
   const rows = Array.from(grouped.values()).map((matches) => aggregateMatchRows(matches, target));
   if (rows.length === 0) return 0;
 
-  const { error: upsertError } = await supabase.from("season_player_statistics").upsert(rows, {
-    onConflict: "player_sportmonks_id,team_sportmonks_id,season_sportmonks_id"
-  });
+  for (const batch of chunk(rows, 100)) {
+    const { error: upsertError } = await supabase.from("season_player_statistics").upsert(batch, {
+      onConflict: "player_sportmonks_id,team_sportmonks_id,season_sportmonks_id"
+    });
 
-  if (upsertError) throw upsertError;
+    if (upsertError) throw upsertError;
+  }
+
   return rows.length;
 }
 
@@ -348,4 +352,22 @@ function firstString(...values: unknown[]) {
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function chunk<T>(rows: T[], size: number) {
+  const batches: T[][] = [];
+  for (let index = 0; index < rows.length; index += size) {
+    batches.push(rows.slice(index, index + size));
+  }
+  return batches;
+}
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (isRecord(error)) {
+    const message = firstString(error.message, error.error_description, error.details, error.hint);
+    if (message) return message;
+    return JSON.stringify(error);
+  }
+  return String(error);
 }
