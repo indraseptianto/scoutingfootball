@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAuthorizedCronRequest } from "@/lib/auth/cron";
 import { isSyncEntity, syncJobs, type SyncEntity } from "@/lib/providers/sportmonks/sync";
 
 const cronBatches: Record<string, SyncEntity[]> = {
@@ -7,7 +8,7 @@ const cronBatches: Record<string, SyncEntity[]> = {
 };
 
 export async function GET(request: NextRequest) {
-  if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCronRequest(request)) {
     return new Response("Unauthorized", { status: 401 });
   }
 

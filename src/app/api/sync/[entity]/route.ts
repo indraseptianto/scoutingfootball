@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { isAuthorizedCronRequest } from "@/lib/auth/cron";
 import { isSyncEntity, syncJobs } from "@/lib/providers/sportmonks/sync";
 
 export async function POST(request: NextRequest, context: { params: Promise<{ entity: string }> }) {
-  if (request.headers.get("authorization") !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (!isAuthorizedCronRequest(request)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
