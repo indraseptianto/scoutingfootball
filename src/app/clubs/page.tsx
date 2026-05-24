@@ -1,4 +1,4 @@
-import { Search, Users } from "lucide-react";
+import { Search, Trophy, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
@@ -32,6 +32,7 @@ export default async function ClubsPage({ searchParams }: { searchParams: Promis
             Clubs and squad sizes synced from your five Sportmonks trial leagues.
           </p>
         </div>
+        <Button variant="secondary" asChild><a href="/leagues"><Trophy size={16} /> League dashboards</a></Button>
       </div>
 
       <form className="mt-8 grid gap-3 rounded-lg border border-border bg-card p-4 md:grid-cols-[1fr_auto_auto]">

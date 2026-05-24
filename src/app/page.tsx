@@ -21,6 +21,7 @@ export default function HomePage() {
           <span className="text-lg font-semibold">ScoutFlow AI</span>
         </div>
         <div className="hidden items-center gap-2 md:flex">
+          <Button variant="ghost" asChild><a href="/leagues">Leagues</a></Button>
           <Button variant="ghost" asChild><a href="/players">Players</a></Button>
           <Button variant="ghost" asChild><a href="/clubs">Clubs</a></Button>
           <Button variant="ghost" asChild><a href="/admin/sync">Sync Admin</a></Button>

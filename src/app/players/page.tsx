@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Search, SlidersHorizontal, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Shield, SlidersHorizontal, Star, Trophy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
@@ -43,6 +43,10 @@ export default async function PlayersPage({ searchParams }: { searchParams: Prom
           <p className="mt-2 max-w-2xl text-muted">
             Live from your Supabase cache populated by Sportmonks Football API v3.
           </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" asChild><a href="/leagues"><Trophy size={16} /> Leagues</a></Button>
+          <Button variant="secondary" asChild><a href="/clubs"><Shield size={16} /> Clubs</a></Button>
         </div>
       </div>
 
