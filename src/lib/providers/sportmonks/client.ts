@@ -79,11 +79,13 @@ export async function sportmonksFetch<T>(
 export async function sportmonksFetchPaginated<T>(
   path: string,
   query: SportmonksQuery = {},
-  onPage?: (rows: T[], page: number) => Promise<void>
+  onPage?: (rows: T[], page: number) => Promise<void>,
+  options: { maxPages?: number } = {}
 ) {
   const allRows: T[] = [];
   let page = Number(query.page ?? 1);
   let hasMore = true;
+  let pagesFetched = 0;
 
   while (hasMore) {
     const response = await sportmonksFetch<T[]>(path, { per_page: 50, ...query, page });
@@ -93,6 +95,8 @@ export async function sportmonksFetchPaginated<T>(
 
     hasMore = Boolean(response.pagination?.has_more);
     page += 1;
+    pagesFetched += 1;
+    if (options.maxPages && pagesFetched >= options.maxPages) break;
   }
 
   return allRows;

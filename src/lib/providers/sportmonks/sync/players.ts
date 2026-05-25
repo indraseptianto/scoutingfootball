@@ -2,12 +2,19 @@ import { sportmonksEndpoints, sportmonksIncludes } from "../endpoints";
 import { normalizePlayer } from "../normalize/players";
 import { runSportmonksSync } from "./core";
 
-export function syncPlayers() {
+export function syncPlayers(page = "", maxPages = "") {
+  const pageNumber = Number(page);
+  const maxPageCount = Number(maxPages);
+
   return runSportmonksSync({
-    entity: "players",
+    entity: pageNumber > 0 ? `players:page:${pageNumber}` : "players",
     endpoint: sportmonksEndpoints.players,
     table: "players",
-    query: { include: sportmonksIncludes.playerList },
+    query: {
+      include: sportmonksIncludes.playerList,
+      page: pageNumber > 0 ? pageNumber : undefined
+    },
+    maxPages: Number.isFinite(maxPageCount) && maxPageCount > 0 ? maxPageCount : undefined,
     normalize: normalizePlayer
   });
 }

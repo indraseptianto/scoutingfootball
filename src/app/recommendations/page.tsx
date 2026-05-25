@@ -135,7 +135,18 @@ export default async function RecommendationsPage({ searchParams }: { searchPara
             ))}
             {recommendations.length === 0 ? (
               <Card>
-                <CardContent className="p-6 text-sm text-muted">No candidates match this recruitment brief yet.</CardContent>
+                <CardContent className="grid gap-4 p-6 text-sm text-muted">
+                  <p>No candidates match this recruitment brief yet.</p>
+                  <div className="rounded-md border border-border bg-black/20 p-4">
+                    <p className="font-medium text-foreground">Try widening the brief:</p>
+                    <p className="mt-2">Use Contract Preference: Any, increase max age, or run batched players/transfers sync if you need expiring-contract recommendations.</p>
+                    <Button className="mt-4" variant="secondary" asChild>
+                      <a href={`/recommendations?position=${encodeURIComponent(filters.position)}&minAge=${filters.minAge}&maxAge=${filters.maxAge}&style=${encodeURIComponent(filters.style)}&contract=Any&risk=${encodeURIComponent(filters.risk)}&notes=${encodeURIComponent(filters.notes)}`}>
+                        Retry with contract Any
+                      </a>
+                    </Button>
+                  </div>
+                </CardContent>
               </Card>
             ) : null}
           </div>

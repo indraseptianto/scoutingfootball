@@ -74,15 +74,21 @@ export async function syncStatistics(seasonId = process.env.SPORTMONKS_DEFAULT_S
     const cachedFixtures = (fixtures ?? []) as FixtureCacheRow[];
     const candidateFixtures =
       mode === "refresh" ? cachedFixtures.slice(0, limit) : await prioritizeUnsyncedFixtures(cachedFixtures, limit);
+    const fixtureErrors: string[] = [];
 
     for (const fixture of candidateFixtures) {
-      recordsProcessed += await syncFixturePlayerStatistics(fixture);
+      try {
+        recordsProcessed += await syncFixturePlayerStatistics(fixture);
+      } catch (error) {
+        fixtureErrors.push(`${fixture.sportmonks_id}: ${serializeError(error)}`);
+      }
     }
 
-    await finishSyncLog(logId, "success", recordsProcessed);
-    return { entity, status: "success", recordsProcessed } satisfies SyncJobResult;
+    const errorSummary = fixtureErrors.length > 0 ? fixtureErrors.slice(0, 5).join(" | ") : undefined;
+    await finishSyncLog(logId, "success", recordsProcessed, errorSummary);
+    return { entity, status: "success", recordsProcessed, error: errorSummary } satisfies SyncJobResult;
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown statistics sync error";
+    const message = serializeError(error);
     await finishSyncLog(logId, "failed", recordsProcessed, message);
     return { entity, status: "failed", recordsProcessed, error: message } satisfies SyncJobResult;
   }
@@ -343,4 +349,14 @@ function firstString(...values: unknown[]) {
 
 function isRecord(value: unknown): value is JsonRecord {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) return error.message;
+  if (isRecord(error)) {
+    const message = firstString(error.message, error.error_description, error.details, error.hint);
+    if (message) return message;
+    return JSON.stringify(error);
+  }
+  return String(error);
 }

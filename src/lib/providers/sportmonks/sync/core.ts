@@ -13,6 +13,7 @@ type SyncConfig<T> = {
   endpoint: string;
   table: string;
   query?: Record<string, string | number | boolean | undefined>;
+  maxPages?: number;
   normalize: (row: T) => Record<string, unknown>;
 };
 
@@ -62,7 +63,7 @@ export async function runSportmonksSync<T extends Record<string, unknown>>(confi
 
       if (error) throw error;
       recordsProcessed += normalized.length;
-    });
+    }, { maxPages: config.maxPages });
 
     await finishSyncLog(logId, "success", recordsProcessed);
     return { entity: config.entity, status: "success", recordsProcessed };
