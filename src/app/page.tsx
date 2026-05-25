@@ -24,6 +24,8 @@ export default function HomePage() {
           <Button variant="ghost" asChild><a href="/leagues">Leagues</a></Button>
           <Button variant="ghost" asChild><a href="/players">Players</a></Button>
           <Button variant="ghost" asChild><a href="/hidden-gems">Hidden Gems</a></Button>
+          <Button variant="ghost" asChild><a href="/recommendations">Recommendations</a></Button>
+          <Button variant="ghost" asChild><a href="/compare">Compare</a></Button>
           <Button variant="ghost" asChild><a href="/scouting">Scouting</a></Button>
           <Button variant="ghost" asChild><a href="/shortlist">Shortlist</a></Button>
           <Button variant="ghost" asChild><a href="/admin/sync">Sync Admin</a></Button>
@@ -46,6 +48,7 @@ export default function HomePage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Button asChild><a href="/hidden-gems">Open discovery board <ArrowRight size={16} /></a></Button>
+            <Button variant="secondary" asChild><a href="/recommendations">Get recommendations</a></Button>
             <Button variant="secondary" asChild><a href="/scouting">Scout one player</a></Button>
             <Button variant="secondary" asChild><a href="/admin/sync">Manage data sync</a></Button>
           </div>
@@ -70,6 +73,8 @@ export default function HomePage() {
               <div className="grid grid-cols-2 gap-3 pt-2">
                 <Button variant="secondary" asChild><a href="/contracts">Contracts</a></Button>
                 <Button variant="secondary" asChild><a href="/watchlist">Watchlist</a></Button>
+                <Button variant="secondary" asChild><a href="/compare">Compare</a></Button>
+                <Button variant="secondary" asChild><a href="/recommendations">Recommend</a></Button>
               </div>
             </CardContent>
           </Card>
