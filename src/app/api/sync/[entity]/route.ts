@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ en
 }
 
 function runJob(entity: string, job: (...args: string[]) => Promise<unknown>, payload: { teamId?: string; seasonId?: string; refresh?: boolean; page?: string | number; maxPages?: string | number }) {
-  if (entity === "players") return job(String(payload.page ?? ""), String(payload.maxPages ?? ""));
+  if (entity === "players" || entity === "transfers") return job(String(payload.page ?? ""), String(payload.maxPages ?? ""));
   if (entity === "squads") return job(payload.teamId ?? "", payload.seasonId ?? "");
   if (entity === "standings" || entity === "season-statistics") return job(payload.seasonId ?? "");
   if (entity === "statistics") return job(payload.seasonId ?? "", payload.refresh ? "refresh" : "");

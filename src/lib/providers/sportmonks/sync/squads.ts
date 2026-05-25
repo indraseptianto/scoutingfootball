@@ -5,6 +5,7 @@ import { normalizePlayer } from "../normalize/players";
 import { normalizeSquadPlayer } from "../normalize/squads";
 import { finishSyncLog, runSportmonksSync, startSyncLog, type SyncJobResult } from "./core";
 import { getTargetCurrentSeasonIds } from "./teams";
+import { upsertTransferMetadataFromPlayers } from "./transfer-metadata";
 
 export async function syncSquads(teamId = process.env.SPORTMONKS_DEFAULT_TEAM_ID, seasonId = process.env.SPORTMONKS_DEFAULT_SEASON_ID) {
   if (teamId) {
@@ -13,7 +14,8 @@ export async function syncSquads(teamId = process.env.SPORTMONKS_DEFAULT_TEAM_ID
       endpoint: seasonId ? sportmonksEndpoints.squadsBySeasonTeam(seasonId, teamId) : sportmonksEndpoints.squadsByTeam(teamId),
       table: "squad_players",
       query: { include: sportmonksIncludes.squad },
-      normalize: (row) => normalizeSquadPlayer(row, teamId, seasonId)
+      normalize: (row) => normalizeSquadPlayer(row, teamId, seasonId),
+      afterPage: async (rows) => upsertTransferMetadataFromPlayers(rows.map((row) => row.player).filter(isRecord))
     });
   }
 
@@ -76,6 +78,7 @@ async function syncSquadForTeamSeason(teamId: number, seasonId: number): Promise
         }
 
         recordsProcessed += squadRows.length;
+        recordsProcessed += await upsertTransferMetadataFromPlayers(playersFromRows(rows));
       }
     );
 
@@ -86,4 +89,12 @@ async function syncSquadForTeamSeason(teamId: number, seasonId: number): Promise
     await finishSyncLog(logId, "failed", recordsProcessed, message);
     return { entity, status: "failed", recordsProcessed, error: message };
   }
+}
+
+function playersFromRows(rows: Record<string, unknown>[]) {
+  return rows.map((row) => row.player).filter(isRecord);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

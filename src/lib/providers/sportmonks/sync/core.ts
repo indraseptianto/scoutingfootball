@@ -15,6 +15,7 @@ type SyncConfig<T> = {
   query?: Record<string, string | number | boolean | undefined>;
   maxPages?: number;
   normalize: (row: T) => Record<string, unknown>;
+  afterPage?: (rows: T[], page: number) => Promise<number | void>;
 };
 
 export async function startSyncLog(entity: string) {
@@ -53,7 +54,7 @@ export async function runSportmonksSync<T extends Record<string, unknown>>(confi
   const logId = await startSyncLog(config.entity);
 
   try {
-    await sportmonksFetchPaginated<T>(config.endpoint, config.query, async (rows) => {
+    await sportmonksFetchPaginated<T>(config.endpoint, config.query, async (rows, page) => {
       const normalized = rows.map(config.normalize).filter((row) => row.sportmonks_id);
       if (normalized.length === 0) return;
 
@@ -63,6 +64,7 @@ export async function runSportmonksSync<T extends Record<string, unknown>>(confi
 
       if (error) throw error;
       recordsProcessed += normalized.length;
+      recordsProcessed += await config.afterPage?.(rows, page) ?? 0;
     }, { maxPages: config.maxPages });
 
     await finishSyncLog(logId, "success", recordsProcessed);

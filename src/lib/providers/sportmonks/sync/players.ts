@@ -1,6 +1,7 @@
 import { sportmonksEndpoints, sportmonksIncludes } from "../endpoints";
 import { normalizePlayer } from "../normalize/players";
 import { runSportmonksSync } from "./core";
+import { upsertTransferMetadataFromPlayers } from "./transfer-metadata";
 
 export function syncPlayers(page = "", maxPages = "") {
   const pageNumber = Number(page);
@@ -15,6 +16,7 @@ export function syncPlayers(page = "", maxPages = "") {
       page: pageNumber > 0 ? pageNumber : undefined
     },
     maxPages: Number.isFinite(maxPageCount) && maxPageCount > 0 ? maxPageCount : undefined,
-    normalize: normalizePlayer
+    normalize: normalizePlayer,
+    afterPage: upsertTransferMetadataFromPlayers
   });
 }

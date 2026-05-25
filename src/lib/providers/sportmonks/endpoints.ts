@@ -31,9 +31,9 @@ export const sportmonksEndpoints = {
 } as const;
 
 export const sportmonksIncludes = {
-  playerList: "position;nationality;metadata;teams.team;transfers;pendingTransfers",
-  playerDetail: "position;nationality;metadata;teams.team;statistics.details.type;transfers.fromTeam;transfers.toTeam;pendingTransfers.fromTeam;pendingTransfers.toTeam",
-  squad: "player.position;player.nationality;player.statistics.details",
+  playerList: "position;detailedPosition;country;nationality;metadata;teams.team;transfers;pendingTransfers",
+  playerDetail: "position;detailedPosition;country;nationality;metadata;teams.team;statistics.details.type;transfers.fromTeam;transfers.toTeam;pendingTransfers.fromTeam;pendingTransfers.toTeam",
+  squad: "player.position;player.detailedPosition;player.country;player.nationality;player.metadata;player.transfers;player.pendingTransfers;player.statistics.details",
   fixtures: "participants;scores;state;league;round",
   fixturePlayerStats: "participants;scores;state;league;round;lineups.details.type;lineups.type;lineups.position;lineups.player",
   transfers: "player;fromTeam;toTeam;type"
