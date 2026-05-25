@@ -31,6 +31,7 @@ html {
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background:
     radial-gradient(circle at 12% 8%, rgba(0, 255, 135, 0.08), transparent 24rem),
     radial-gradient(circle at 78% 16%, rgba(56, 189, 248, 0.08), transparent 22rem),
@@ -70,13 +71,34 @@ a {
   animation: sweep 5.5s ease-in-out infinite;
 }
 
+.layout2-hero {
+  background:
+    radial-gradient(circle at 50% 35%, rgba(0, 255, 135, 0.18), transparent 20rem),
+    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.11), transparent 28rem),
+    linear-gradient(180deg, rgba(7, 11, 20, 0.55), #070b14 78%);
+}
+
+.layout2-hero::before {
+  content: "";
+  position: absolute;
+  inset: 12% 16% auto;
+  height: 22rem;
+  border-radius: 999px;
+  background: rgba(0, 255, 135, 0.1);
+  filter: blur(72px);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
 .brand-mark {
   box-shadow: 0 0 28px rgba(0, 255, 135, 0.28);
 }
 
 .hero-copy,
 .hero-panel,
-.workflow-card {
+.workflow-card,
+.layout2-card,
+.floating-stat {
   animation: rise-in 0.7s ease both;
 }
 
@@ -90,6 +112,37 @@ a {
 
 .workflow-card:nth-child(3) {
   animation-delay: 0.16s;
+}
+
+.layout2-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.layout2-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.1), transparent 42%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  pointer-events: none;
+}
+
+.layout2-card:hover::before {
+  opacity: 1;
+}
+
+.layout2-stat-cloud {
+  perspective: 900px;
+}
+
+.floating-stat {
+  animation-name: rise-in, float-card;
+  animation-duration: 0.7s, 5.5s;
+  animation-timing-function: ease, ease-in-out;
+  animation-fill-mode: both, both;
+  animation-iteration-count: 1, infinite;
 }
 
 .pitch-card {
@@ -217,6 +270,15 @@ a {
   }
 }
 
+@keyframes float-card {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
 @keyframes pulse-ring {
   0% {
     box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.5);
@@ -251,6 +313,8 @@ a {
   .hero-copy,
   .hero-panel,
   .workflow-card,
+  .layout2-card,
+  .floating-stat,
   .player-pin,
   .pulse-dot,
   .animated-bar,
