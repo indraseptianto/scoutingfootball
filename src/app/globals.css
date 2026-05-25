@@ -33,6 +33,7 @@ body {
   margin: 0;
   background:
     radial-gradient(circle at 12% 8%, rgba(0, 255, 135, 0.08), transparent 24rem),
+    radial-gradient(circle at 78% 16%, rgba(56, 189, 248, 0.08), transparent 22rem),
     linear-gradient(180deg, #070b14 0%, #0a0e1a 42%, #05070d 100%);
   color: var(--foreground);
 }
@@ -54,4 +55,206 @@ a {
 
 .input-like:focus {
   box-shadow: 0 0 0 2px var(--accent);
+}
+
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(180deg, black, transparent 78%);
+}
+
+.hero-sweep {
+  background: linear-gradient(90deg, transparent, rgba(0, 255, 135, 0.95), transparent);
+  animation: sweep 5.5s ease-in-out infinite;
+}
+
+.brand-mark {
+  box-shadow: 0 0 28px rgba(0, 255, 135, 0.28);
+}
+
+.hero-copy,
+.hero-panel,
+.workflow-card {
+  animation: rise-in 0.7s ease both;
+}
+
+.hero-panel {
+  animation-delay: 0.12s;
+}
+
+.workflow-card:nth-child(2) {
+  animation-delay: 0.08s;
+}
+
+.workflow-card:nth-child(3) {
+  animation-delay: 0.16s;
+}
+
+.pitch-card {
+  position: relative;
+}
+
+.pitch-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: 0.6rem;
+  background: linear-gradient(135deg, rgba(0, 255, 135, 0.25), rgba(96, 165, 250, 0.18), transparent 58%);
+  opacity: 0.9;
+}
+
+.football-pitch {
+  background:
+    linear-gradient(90deg, rgba(255,255,255,0.045) 50%, transparent 50%),
+    linear-gradient(180deg, rgba(255,255,255,0.06), transparent),
+    #10251d;
+  background-size: 90px 100%, 100% 100%, auto;
+}
+
+.football-pitch::before,
+.football-pitch::after {
+  content: "";
+  position: absolute;
+  inset-inline: 7%;
+  border: 2px solid rgba(255, 255, 255, 0.18);
+}
+
+.football-pitch::before {
+  top: 5%;
+  height: 18%;
+  border-bottom-left-radius: 90px;
+  border-bottom-right-radius: 90px;
+}
+
+.football-pitch::after {
+  bottom: 5%;
+  height: 18%;
+  border-top-left-radius: 90px;
+  border-top-right-radius: 90px;
+}
+
+.pitch-line {
+  position: absolute;
+  pointer-events: none;
+}
+
+.center-circle {
+  left: 50%;
+  top: 50%;
+  height: 116px;
+  width: 116px;
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+}
+
+.box-top,
+.box-bottom {
+  left: 0;
+  width: 100%;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.box-top {
+  top: 50%;
+}
+
+.box-bottom {
+  display: none;
+}
+
+.player-pin {
+  transform: translate(-50%, -50%);
+  animation: float-pin 3.8s ease-in-out infinite;
+}
+
+.pulse-dot {
+  box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.55);
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+.animated-bar {
+  width: 91%;
+  animation: grow-bar 1.2s ease both;
+}
+
+.live-row {
+  animation: slide-in 0.55s ease both;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes float-pin {
+  0%, 100% {
+    transform: translate(-50%, -50%) translateY(0);
+  }
+  50% {
+    transform: translate(-50%, -50%) translateY(-8px);
+  }
+}
+
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 rgba(0, 255, 135, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(0, 255, 135, 0);
+  }
+}
+
+@keyframes grow-bar {
+  from {
+    width: 12%;
+  }
+  to {
+    width: 91%;
+  }
+}
+
+@keyframes sweep {
+  0%, 100% {
+    transform: translateX(-45%);
+    opacity: 0.25;
+  }
+  50% {
+    transform: translateX(45%);
+    opacity: 0.75;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-sweep,
+  .hero-copy,
+  .hero-panel,
+  .workflow-card,
+  .player-pin,
+  .pulse-dot,
+  .animated-bar,
+  .live-row {
+    animation: none;
+  }
 }
