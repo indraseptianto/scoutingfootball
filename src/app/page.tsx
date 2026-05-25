@@ -23,7 +23,9 @@ export default function HomePage() {
         <div className="hidden items-center gap-2 md:flex">
           <Button variant="ghost" asChild><a href="/leagues">Leagues</a></Button>
           <Button variant="ghost" asChild><a href="/players">Players</a></Button>
-          <Button variant="ghost" asChild><a href="/clubs">Clubs</a></Button>
+          <Button variant="ghost" asChild><a href="/hidden-gems">Hidden Gems</a></Button>
+          <Button variant="ghost" asChild><a href="/scouting">Scouting</a></Button>
+          <Button variant="ghost" asChild><a href="/shortlist">Shortlist</a></Button>
           <Button variant="ghost" asChild><a href="/admin/sync">Sync Admin</a></Button>
           <Button variant="secondary">Request demo</Button>
         </div>
@@ -43,7 +45,8 @@ export default function HomePage() {
             sporting directors, club admins, and recruitment agencies.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <Button asChild><a href="/players">Open player database <ArrowRight size={16} /></a></Button>
+            <Button asChild><a href="/hidden-gems">Open discovery board <ArrowRight size={16} /></a></Button>
+            <Button variant="secondary" asChild><a href="/scouting">Scout one player</a></Button>
             <Button variant="secondary" asChild><a href="/admin/sync">Manage data sync</a></Button>
           </div>
         </div>
@@ -64,6 +67,10 @@ export default function HomePage() {
                   <span className="font-mono text-sm text-accent">{index * 7 + 4}</span>
                 </div>
               ))}
+              <div className="grid grid-cols-2 gap-3 pt-2">
+                <Button variant="secondary" asChild><a href="/contracts">Contracts</a></Button>
+                <Button variant="secondary" asChild><a href="/watchlist">Watchlist</a></Button>
+              </div>
             </CardContent>
           </Card>
         </div>
