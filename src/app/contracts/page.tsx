@@ -1,14 +1,14 @@
 import { ArrowLeft, BellRing, CalendarClock, FileWarning } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { contractStatus, getRecruitmentDataset, playerAge } from "@/lib/recruitment-data";
+import { contractStatusForPlayer, getRecruitmentDataset, playerAge } from "@/lib/recruitment-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function ContractsPage() {
   const { players, error } = await getRecruitmentDataset(300);
   const alerts = players
-    .map((player) => ({ player, status: contractStatus(player.contract_expires_at) }))
+    .map((player) => ({ player, status: contractStatusForPlayer(player) }))
     .sort((a, b) => b.status.score - a.status.score || b.player.hidden_gem_score - a.player.hidden_gem_score)
     .slice(0, 60);
   const high = alerts.filter((item) => item.status.urgency === "high").length;
@@ -39,22 +39,24 @@ export default async function ContractsPage() {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <div className="grid min-w-[920px] grid-cols-[1.35fr_0.85fr_1fr_0.7fr_0.85fr_0.9fr] border-b border-border pb-3 text-xs uppercase text-muted">
+            <div className="grid min-w-[1080px] grid-cols-[1.3fr_0.8fr_1fr_0.6fr_0.7fr_1fr_0.9fr] border-b border-border pb-3 text-xs uppercase text-muted">
               <span>Player</span>
               <span>Position</span>
               <span>Club</span>
               <span>Age</span>
               <span>Signal</span>
               <span>Contract</span>
+              <span>Source</span>
             </div>
             {alerts.map(({ player, status }) => (
-              <a key={player.sportmonks_id} href={`/scouting?player=${player.sportmonks_id}`} className="grid min-w-[920px] grid-cols-[1.35fr_0.85fr_1fr_0.7fr_0.85fr_0.9fr] border-b border-border py-4 text-sm transition last:border-0 hover:text-accent">
+              <a key={player.sportmonks_id} href={`/scouting?player=${player.sportmonks_id}`} className="grid min-w-[1080px] grid-cols-[1.3fr_0.8fr_1fr_0.6fr_0.7fr_1fr_0.9fr] border-b border-border py-4 text-sm transition last:border-0 hover:text-accent">
                 <span className="font-medium">{player.display_name}</span>
                 <span className="text-muted">{player.position_name ?? "Unknown"}</span>
                 <span className="truncate text-muted">{player.club_name ?? "Unassigned"}</span>
                 <span className="font-mono">{playerAge(player.date_of_birth) ?? "-"}</span>
                 <span className="font-mono">{player.hidden_gem_score}</span>
                 <span className={status.urgency === "high" ? "text-red-200" : status.urgency === "medium" ? "text-yellow-100" : "text-muted"}>{status.label}</span>
+                <span className="text-muted">{status.source}</span>
               </a>
             ))}
           </div>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   RecruitmentPlayer,
   buildRecruitmentScore,
-  contractStatus,
+  contractStatusForPlayer,
   formatDecimal,
   getRecruitmentDataset,
   per90,
@@ -159,7 +159,7 @@ function matchesFilters(
   filters: { position: string; minAge: number; maxAge: number; contract: string }
 ) {
   const age = playerAge(player.date_of_birth);
-  const contract = contractStatus(player.contract_expires_at);
+  const contract = contractStatusForPlayer(player);
   if (filters.position && player.position_name !== filters.position) return false;
   if (age && (age < filters.minAge || age > filters.maxAge)) return false;
   if (filters.contract === "Expiring" && contract.urgency !== "high") return false;
@@ -171,11 +171,11 @@ function buildRecommendation(player: RecruitmentPlayer, style: string, riskToler
   const base = buildRecruitmentScore(player);
   const styleBonus = tacticalStyleBonus(player, style);
   const samplePenalty = player.minutes < 450 && riskTolerance === "Low" ? 12 : player.minutes < 450 && riskTolerance === "Medium" ? 6 : 0;
-  const contract = contractStatus(player.contract_expires_at);
+  const contract = contractStatusForPlayer(player);
   const fitScore = Math.max(0, Math.min(100, Math.round(base + styleBonus - samplePenalty)));
   const output = per90(player.goals + player.assists, player.minutes);
   const xgi = per90(player.expected_goals + player.expected_assists, player.minutes);
-  const risk = player.minutes < 450 || !player.contract_expires_at ? "Medium" : contract.urgency === "high" && fitScore > 75 ? "Low" : "Medium";
+  const risk = player.minutes < 450 || contract.source !== "exact" ? "Medium" : contract.urgency === "high" && fitScore > 75 ? "Low" : "Medium";
 
   return {
     player,

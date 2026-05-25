@@ -1,14 +1,14 @@
 import { ArrowLeft, Activity, Eye, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buildRecruitmentScore, contractStatus, formatDecimal, getRecruitmentDataset, per90 } from "@/lib/recruitment-data";
+import { buildRecruitmentScore, contractStatusForPlayer, formatDecimal, getRecruitmentDataset, per90 } from "@/lib/recruitment-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function WatchlistPage() {
   const { players, error } = await getRecruitmentDataset(260);
   const watch = players
-    .map((player) => ({ player, score: buildRecruitmentScore(player), contract: contractStatus(player.contract_expires_at) }))
+    .map((player) => ({ player, score: buildRecruitmentScore(player), contract: contractStatusForPlayer(player) }))
     .filter((item) => item.player.hidden_gem_score >= 65 || item.score >= 62 || item.contract.urgency !== "low")
     .sort((a, b) => b.score - a.score)
     .slice(0, 36);

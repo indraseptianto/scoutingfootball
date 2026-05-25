@@ -1,7 +1,7 @@
 import { ArrowLeft, Search, Sparkles, Star, Target, Timer } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buildRecruitmentScore, contractStatus, formatDecimal, getRecruitmentDataset, per90, playerAge } from "@/lib/recruitment-data";
+import { buildRecruitmentScore, contractStatusForPlayer, formatDecimal, getRecruitmentDataset, per90, playerAge } from "@/lib/recruitment-data";
 import { hiddenGemTier } from "@/lib/hidden-gem";
 
 type SearchParams = {
@@ -23,7 +23,7 @@ export default async function HiddenGemsPage({ searchParams }: { searchParams: P
       const age = playerAge(player.date_of_birth);
       return !age || age <= maxAge;
     })
-    .map((player) => ({ player, score: buildRecruitmentScore(player), contract: contractStatus(player.contract_expires_at) }))
+    .map((player) => ({ player, score: buildRecruitmentScore(player), contract: contractStatusForPlayer(player) }))
     .sort((a, b) => b.player.hidden_gem_score - a.player.hidden_gem_score || b.score - a.score)
     .slice(0, 48);
 

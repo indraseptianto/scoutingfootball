@@ -2,6 +2,7 @@ import { hiddenGemTier } from "@/lib/hidden-gem";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 
 export type RecruitmentPlayer = {
+  id: string;
   sportmonks_id: number;
   display_name: string;
   position_name: string | null;
@@ -13,8 +14,11 @@ export type RecruitmentPlayer = {
   preferred_foot: string | null;
   contract_expires_at: string | null;
   hidden_gem_score: number;
+  stored_hidden_gem_score: number;
   club_name: string | null;
   club_sportmonks_id: number | null;
+  latest_transfer_date: string | null;
+  latest_transfer_type: string | null;
   minutes: number;
   rating: number | null;
   goals: number;
@@ -39,6 +43,7 @@ export type RecruitmentDataset = {
 };
 
 type PlayerRow = {
+  id: string;
   sportmonks_id: number;
   display_name: string;
   position_name: string | null;
@@ -78,20 +83,21 @@ export async function getRecruitmentDataset(limit = 240): Promise<RecruitmentDat
     const supabase = getSupabaseServiceClient();
     const { data: playerRows, error: playersError } = await supabase
       .from("players")
-      .select("sportmonks_id,display_name,position_name,nationality_name,image_path,date_of_birth,height,weight,preferred_foot,contract_expires_at,hidden_gem_score")
-      .order("hidden_gem_score", { ascending: false })
-      .limit(limit);
+      .select("id,sportmonks_id,display_name,position_name,nationality_name,image_path,date_of_birth,height,weight,preferred_foot,contract_expires_at,hidden_gem_score")
+      .not("position_name", "ilike", "%coach%")
+      .limit(limit * 3);
 
     if (playersError) throw playersError;
 
     const players = ((playerRows ?? []) as PlayerRow[]).map((player) => ({
       ...player,
       sportmonks_id: Number(player.sportmonks_id),
-      hidden_gem_score: Number(player.hidden_gem_score ?? 0)
+      hidden_gem_score: Number(player.hidden_gem_score ?? 0),
+      stored_hidden_gem_score: Number(player.hidden_gem_score ?? 0)
     }));
     const playerIds = players.map((player) => player.sportmonks_id);
 
-    const [{ data: statRows }, { data: squadRows }] = await Promise.all([
+    const [{ data: statRows }, { data: squadRows }, { data: transferRows }] = await Promise.all([
       playerIds.length > 0
         ? supabase
             .from("season_player_statistics")
@@ -104,6 +110,13 @@ export async function getRecruitmentDataset(limit = 240): Promise<RecruitmentDat
             .from("squad_players")
             .select("player_sportmonks_id,team_sportmonks_id")
             .in("player_sportmonks_id", playerIds)
+        : Promise.resolve({ data: [] }),
+      playerIds.length > 0
+        ? supabase
+            .from("transfers")
+            .select("player_sportmonks_id,transfer_date,type_name")
+            .in("player_sportmonks_id", playerIds)
+            .order("transfer_date", { ascending: false, nullsFirst: false })
         : Promise.resolve({ data: [] })
     ]);
 
@@ -127,15 +140,28 @@ export async function getRecruitmentDataset(limit = 240): Promise<RecruitmentDat
       ? await supabase.from("clubs").select("sportmonks_id,name").in("sportmonks_id", teamIds)
       : { data: [] };
     const clubById = new Map((clubRows ?? []).map((club) => [Number(club.sportmonks_id), String(club.name)]));
+    const latestTransferByPlayer = new Map<number, { transfer_date: string | null; type_name: string | null }>();
+    for (const row of (transferRows ?? []) as Array<{ player_sportmonks_id: number; transfer_date: string | null; type_name: string | null }>) {
+      const playerId = Number(row.player_sportmonks_id);
+      if (!latestTransferByPlayer.has(playerId)) {
+        latestTransferByPlayer.set(playerId, {
+          transfer_date: typeof row.transfer_date === "string" ? row.transfer_date : null,
+          type_name: typeof row.type_name === "string" ? row.type_name : null
+        });
+      }
+    }
 
     return {
       players: players.map((player) => {
         const stat = latestStats.get(player.sportmonks_id);
         const clubId = stat?.team_sportmonks_id ?? teamByPlayer.get(player.sportmonks_id) ?? null;
-        return {
+        const latestTransfer = latestTransferByPlayer.get(player.sportmonks_id);
+        const hydratedPlayer = {
           ...player,
           club_sportmonks_id: clubId,
           club_name: clubId ? clubById.get(clubId) ?? null : null,
+          latest_transfer_date: latestTransfer?.transfer_date ?? null,
+          latest_transfer_type: latestTransfer?.type_name ?? null,
           minutes: stat?.minutes ?? 0,
           rating: stat?.rating ?? null,
           goals: stat?.goals ?? 0,
@@ -153,7 +179,11 @@ export async function getRecruitmentDataset(limit = 240): Promise<RecruitmentDat
           ball_recoveries: stat?.ball_recoveries ?? 0,
           season_sportmonks_id: stat?.season_sportmonks_id ?? null
         };
-      }),
+        return {
+          ...hydratedPlayer,
+          hidden_gem_score: calculateLiveHiddenGemScore(hydratedPlayer)
+        };
+      }).sort((a, b) => b.hidden_gem_score - a.hidden_gem_score).slice(0, limit),
       error: null
     };
   } catch (error) {
@@ -165,6 +195,7 @@ export async function getRecruitmentDataset(limit = 240): Promise<RecruitmentDat
 }
 
 export function buildRecruitmentScore(player: RecruitmentPlayer) {
+  const sampleFactor = minutesSampleFactor(player.minutes);
   const output = per90(player.goals + player.assists, player.minutes) * 18;
   const expected = per90(player.expected_goals + player.expected_assists, player.minutes) * 28;
   const creation = per90(player.key_passes, player.minutes) * 8;
@@ -172,13 +203,17 @@ export function buildRecruitmentScore(player: RecruitmentPlayer) {
   const rating = (player.rating ?? 6.2) * 6;
   const age = playerAge(player.date_of_birth);
   const ageBonus = age && age <= 23 ? 9 : age && age <= 26 ? 5 : 0;
-  const contractBonus = contractStatus(player.contract_expires_at).score;
+  const contractBonus = contractStatusForPlayer(player).score;
+  const raw = output + expected + creation + defending + rating + ageBonus + contractBonus;
+  const capped = raw * sampleFactor;
+  const sampleCeiling = player.minutes < 180 ? 58 : player.minutes < 450 ? 72 : 100;
 
-  return Math.round(Math.max(0, Math.min(100, output + expected + creation + defending + rating + ageBonus + contractBonus)));
+  return Math.round(Math.max(0, Math.min(sampleCeiling, capped)));
 }
 
 export function buildScoutingSummary(player: RecruitmentPlayer) {
   const score = buildRecruitmentScore(player);
+  const contract = contractStatusForPlayer(player);
   const strengths = [
     player.hidden_gem_score >= 75 ? `${hiddenGemTier(player.hidden_gem_score)} hidden-gem signal` : "Monitorable hidden-gem profile",
     player.minutes >= 900 ? "Reliable sample size from season minutes" : "Low-minute upside profile",
@@ -187,7 +222,7 @@ export function buildScoutingSummary(player: RecruitmentPlayer) {
     per90(player.tackles + player.interceptions + player.ball_recoveries, player.minutes) >= 6 ? "Strong defensive activity" : "Defensive activity needs video validation"
   ];
   const risks = [
-    player.contract_expires_at ? contractStatus(player.contract_expires_at).label : "Unknown contract status",
+    contract.source === "exact" ? contract.label : `${contract.label} (${contract.source})`,
     player.minutes < 450 ? "Small statistical sample" : "Sample size acceptable",
     player.rating && player.rating < 6.6 ? "Below-threshold average rating" : "Rating profile stable"
   ];
@@ -211,6 +246,68 @@ export function contractStatus(value: string | null) {
   if (days <= 180) return { label: "Expires in 6 months", urgency: "high", score: 10 };
   if (days <= 365) return { label: "Expires in 12 months", urgency: "medium", score: 7 };
   return { label: "Long contract", urgency: "low", score: 0 };
+}
+
+export function contractStatusForPlayer(player: Pick<RecruitmentPlayer, "contract_expires_at" | "latest_transfer_date" | "latest_transfer_type">) {
+  const exact = contractStatus(player.contract_expires_at);
+  if (player.contract_expires_at) return { ...exact, source: "exact" as const };
+
+  if (player.latest_transfer_date) {
+    const transfer = new Date(player.latest_transfer_date);
+    if (!Number.isNaN(transfer.getTime())) {
+      const monthsSinceTransfer = (Date.now() - transfer.getTime()) / 2_592_000_000;
+      if (monthsSinceTransfer <= 18) {
+        return {
+          label: "Likely secured after recent transfer",
+          urgency: "low" as const,
+          score: 0,
+          source: "transfer inference" as const
+        };
+      }
+      if (monthsSinceTransfer >= 42) {
+        return {
+          label: "Possible contract opportunity",
+          urgency: "medium" as const,
+          score: 5,
+          source: "transfer inference" as const
+        };
+      }
+    }
+  }
+
+  return {
+    label: "Needs metadata sync",
+    urgency: "medium" as const,
+    score: 2,
+    source: "missing Sportmonks metadata" as const
+  };
+}
+
+export function calculateLiveHiddenGemScore(player: RecruitmentPlayer) {
+  const age = playerAge(player.date_of_birth);
+  const output = clamp(per90(player.goals + player.assists, player.minutes) * 90);
+  const expected = clamp(per90(player.expected_goals + player.expected_assists, player.minutes) * 110);
+  const creation = clamp(per90(player.key_passes, player.minutes) * 32);
+  const defending = clamp(per90(player.tackles + player.interceptions + player.ball_recoveries, player.minutes) * 10);
+  const rating = clamp(((player.rating ?? 6.4) - 6) * 42);
+  const performanceRatio = clamp(output * 0.24 + expected * 0.26 + creation * 0.16 + defending * 0.18 + rating * 0.16);
+  const ageBonus = age && age <= 21 ? 100 : age && age <= 23 ? 82 : age && age <= 25 ? 58 : age && age <= 28 ? 28 : 10;
+  const contractOpportunity = clamp(contractStatusForPlayer(player).score * 8);
+  const consistency = player.rating ? clamp((player.rating - 5.8) * 32) : 38;
+  const leagueLevelBonus = 65;
+  const storedSignal = clamp(player.stored_hidden_gem_score);
+  const sampleFactor = minutesSampleFactor(player.minutes);
+  const raw =
+    performanceRatio * 0.3 +
+    leagueLevelBonus * 0.12 +
+    ageBonus * 0.15 +
+    contractOpportunity * 0.18 +
+    consistency * 0.1 +
+    storedSignal * 0.15;
+  const capped = raw * sampleFactor;
+  const sampleCeiling = player.minutes < 180 ? 52 : player.minutes < 450 ? 68 : player.minutes < 900 ? 84 : 100;
+
+  return Math.round(Math.max(0, Math.min(sampleCeiling, capped)));
 }
 
 export function playerAge(value: string | null) {
@@ -279,4 +376,17 @@ function nullableNumber(value: unknown) {
     if (Number.isFinite(parsed)) return parsed;
   }
   return null;
+}
+
+function minutesSampleFactor(minutes: number) {
+  if (minutes >= 900) return 1;
+  if (minutes >= 450) return 0.86;
+  if (minutes >= 180) return 0.68;
+  if (minutes > 0) return 0.48;
+  return 0.28;
+}
+
+function clamp(value: number) {
+  if (!Number.isFinite(value)) return 0;
+  return Math.max(0, Math.min(100, value));
 }

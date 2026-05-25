@@ -1,8 +1,10 @@
 import { ArrowLeft, BarChart3, Brain, CheckCircle2, CircleAlert, Search, ShieldCheck, Sparkles, Target } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { buildScoutingSummary, contractStatus, formatDecimal, getRecruitmentDataset, per90, playerAge } from "@/lib/recruitment-data";
+import { buildScoutingSummary, contractStatusForPlayer, formatDecimal, getRecruitmentDataset, per90, playerAge } from "@/lib/recruitment-data";
 import { hiddenGemTier } from "@/lib/hidden-gem";
+import { getSupabaseServiceClient } from "@/lib/supabase/server";
+import { generateAndCacheScoutingReport } from "./actions";
 
 type SearchParams = {
   player?: string;
@@ -21,7 +23,8 @@ export default async function ScoutingPage({ searchParams }: { searchParams: Pro
     .filter((player) => !query || player.display_name.toLowerCase().includes(query.toLowerCase()) || (player.club_name ?? "").toLowerCase().includes(query.toLowerCase()))
     .slice(0, 12);
   const report = selected ? buildScoutingSummary(selected) : null;
-  const contract = selected ? contractStatus(selected.contract_expires_at) : null;
+  const contract = selected ? contractStatusForPlayer(selected) : null;
+  const aiReport = selected ? await getLatestAiReport(selected.id) : null;
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-6 py-8">
@@ -119,6 +122,31 @@ export default async function ScoutingPage({ searchParams }: { searchParams: Pro
                 <Metric icon={<ShieldCheck size={17} />} label="Def actions /90" value={formatDecimal(per90(selected.tackles + selected.interceptions + selected.ball_recoveries, selected.minutes))} />
                 <Metric icon={<BarChart3 size={17} />} label="Pass accuracy" value={selected.pass_accuracy ? `${selected.pass_accuracy.toFixed(1)}%` : "-"} />
               </section>
+
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2"><Brain size={18} /> AI scouting report</CardTitle>
+                  <p className="text-sm text-muted">Generate once, cache in Supabase, and reuse for the same player.</p>
+                </CardHeader>
+                <CardContent className="grid gap-4 xl:grid-cols-[0.9fr_1.1fr]">
+                  <form action={generateAndCacheScoutingReport} className="grid gap-3">
+                    <input type="hidden" name="sportmonksId" value={selected.sportmonks_id} />
+                    <textarea
+                      name="scoutNotes"
+                      rows={6}
+                      placeholder="Scout notes, tactical context, budget, role concerns"
+                      className="min-h-32 rounded-md border border-border bg-black/20 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent"
+                    />
+                    <Button type="submit"><Brain size={16} /> Generate cached report</Button>
+                  </form>
+
+                  <div className="rounded-md border border-border bg-black/20 p-4">
+                    {aiReport ? <AiReportView report={aiReport.report} createdAt={aiReport.created_at} /> : (
+                      <p className="text-sm leading-6 text-muted">No cached AI report yet. Generate a report to save executive summary, strengths, weaknesses, tactical fit, risk, and final recommendation.</p>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </>
           ) : (
             <Card>
@@ -129,6 +157,38 @@ export default async function ScoutingPage({ searchParams }: { searchParams: Pro
         </section>
       </section>
     </main>
+  );
+}
+
+function AiReportView({ report, createdAt }: { report: Record<string, unknown>; createdAt: string }) {
+  const strengths = Array.isArray(report.strengths) ? report.strengths.map(String) : [];
+  const weaknesses = Array.isArray(report.weaknesses) ? report.weaknesses.map(String) : [];
+  return (
+    <div className="grid gap-4">
+      <div>
+        <p className="text-xs uppercase text-muted">Cached {formatDateTime(createdAt)}</p>
+        <h2 className="mt-2 text-xl font-semibold">{String(report.finalRecommendation ?? "Monitor")} - {String(report.recommendationScore ?? "-")}/100</h2>
+        <p className="mt-3 text-sm leading-6 text-muted">{String(report.executiveSummary ?? "No executive summary saved.")}</p>
+      </div>
+      <div className="grid gap-3 md:grid-cols-2">
+        <ReportList title="Strengths" items={strengths} />
+        <ReportList title="Weaknesses" items={weaknesses} />
+      </div>
+      <div className="rounded-md border border-border bg-white/[0.03] p-3 text-sm text-muted">
+        {String(report.tacticalFit ?? "Tactical fit not generated yet.")}
+      </div>
+    </div>
+  );
+}
+
+function ReportList({ title, items }: { title: string; items: string[] }) {
+  return (
+    <div>
+      <h3 className="font-semibold">{title}</h3>
+      <div className="mt-2 grid gap-2">
+        {items.length > 0 ? items.map((item) => <p key={item} className="text-sm text-muted">{item}</p>) : <p className="text-sm text-muted">-</p>}
+      </div>
+    </div>
   );
 }
 
@@ -156,4 +216,35 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
       </CardContent>
     </Card>
   );
+}
+
+async function getLatestAiReport(playerId: string) {
+  const supabase = getSupabaseServiceClient();
+  const { data } = await supabase
+    .from("ai_scouting_reports")
+    .select("report,created_at")
+    .eq("player_id", playerId)
+    .eq("status", "completed")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (!data) return null;
+  return {
+    report: isRecord(data.report) ? data.report : {},
+    created_at: String(data.created_at)
+  };
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(new Date(value));
 }
