@@ -18,11 +18,16 @@ export async function upsertTransferMetadataFromPlayers(players: JsonRecord[]) {
 }
 
 export async function upsertPlayersFromTransfers(transfers: JsonRecord[]) {
-  const players = transfers
+  const playerById = new Map<number, ReturnType<typeof normalizePlayer>>();
+  transfers
     .map((transfer) => transfer.player)
     .filter((player): player is JsonRecord => isRecord(player))
     .map(normalizePlayer)
-    .filter((player) => player.sportmonks_id);
+    .filter((player) => player.sportmonks_id)
+    .forEach((player) => {
+      playerById.set(Number(player.sportmonks_id), player);
+    });
+  const players = Array.from(playerById.values());
 
   if (players.length === 0) return 0;
   const supabase = getSupabaseServiceClient();
