@@ -1,0 +1,24 @@
+{
+  "endpoint": "transfers/latest",
+  "captured_from": "public.transfers.raw",
+  "sample": {
+    "id": 358235,
+    "player_id": 37728963,
+    "from_team_id": 194,
+    "to_team_id": 205,
+    "date": "2024-07-01",
+    "type": {
+      "id": 220,
+      "code": "free-transfer",
+      "name": "Free Transfer",
+      "developer_name": "FREE_TRANSFER"
+    },
+    "amount": null,
+    "completed": true,
+    "player": {
+      "id": 37728963,
+      "display_name": "Jasper Sheik",
+      "metadata": []
+    }
+  }
+}

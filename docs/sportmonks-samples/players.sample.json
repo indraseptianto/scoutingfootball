@@ -1,0 +1,20 @@
+{
+  "endpoint": "players",
+  "captured_from": "public.players.raw",
+  "sample": {
+    "id": 3771,
+    "display_name": "Bjorn Runstrom",
+    "date_of_birth": "1984-01-03",
+    "position_id": 27,
+    "detailed_position_id": null,
+    "position": {
+      "id": 27,
+      "code": "attacker",
+      "name": "Attacker",
+      "developer_name": "ATTACKER"
+    },
+    "metadata": [],
+    "transfers": [],
+    "pendingTransfers": []
+  }
+}

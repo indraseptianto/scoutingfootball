@@ -1,4 +1,5 @@
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
+import { firstNumber, firstString, normalizeFootballMetrics, percentage } from "../metrics";
 import { sportmonksFetch } from "../client";
 import { sportmonksEndpoints, sportmonksIncludes } from "../endpoints";
 import { finishSyncLog, startSyncLog, type SyncJobResult } from "./core";
@@ -150,22 +151,12 @@ function normalizeLineupStatistics(
   if (!Number.isFinite(fixtureId) || !Number.isFinite(playerId) || !Number.isFinite(teamId)) return null;
 
   const details = Array.isArray(lineup.details) ? lineup.details : [];
-  const metrics = details.reduce<Record<string, number | null>>((acc, detail) => {
-    const metric = metricKey(detail);
-    if (!metric) return acc;
-    acc[metric] = numberFromDetail(detail);
-    return acc;
-  }, {});
+  const metrics = normalizeFootballMetrics(details);
 
   const opponentTeamId = findOpponentTeamId(teamId, participantByTeam);
   const location = participantByTeam.get(teamId)?.meta?.location ?? null;
   const score = scoreForTeam(fixtureDetail.scores, teamId);
   const opponentScore = opponentTeamId ? scoreForTeam(fixtureDetail.scores, opponentTeamId) : null;
-
-  const passesTotal = firstMetric(metrics, "passes_total", "passes");
-  const passesAccurate = firstMetric(metrics, "passes_accurate", "accurate_passes");
-  const dribbleAttempts = firstMetric(metrics, "dribble_attempts", "dribbles_attempted", "dribbles_total");
-  const dribblesSuccessful = firstMetric(metrics, "dribbles_successful", "successful_dribbles");
 
   return {
     fixture_sportmonks_id: fixtureId,
@@ -182,59 +173,7 @@ function normalizeLineupStatistics(
     team_score: score,
     opponent_score: opponentScore,
     result: resultFor(score, opponentScore),
-    minutes: firstMetric(metrics, "minutes", "minutes_played"),
-    rating: firstMetric(metrics, "rating"),
-    goals: firstMetric(metrics, "goals"),
-    assists: firstMetric(metrics, "assists"),
-    shots_total: firstMetric(metrics, "shots_total", "shots"),
-    shots_on_target: firstMetric(metrics, "shots_on_target"),
-    shots_off_target: firstMetric(metrics, "shots_off_target"),
-    expected_goals: firstMetric(metrics, "expected_goals", "xg"),
-    expected_goals_on_target: firstMetric(metrics, "expected_goals_on_target", "xgot"),
-    expected_assists: firstMetric(metrics, "expected_assists", "xa", "xd"),
-    shooting_performance: firstMetric(metrics, "shooting_performance"),
-    passes_total: passesTotal,
-    passes_accurate: passesAccurate,
-    pass_accuracy: firstMetric(metrics, "pass_accuracy") ?? percentage(passesAccurate, passesTotal),
-    key_passes: firstMetric(metrics, "key_passes"),
-    chances_created: firstMetric(metrics, "chances_created"),
-    big_chances_created: firstMetric(metrics, "big_chances_created"),
-    passes_final_third: firstMetric(metrics, "passes_in_final_third"),
-    backward_passes: firstMetric(metrics, "backward_passes"),
-    crosses_total: firstMetric(metrics, "crosses_total", "crosses"),
-    crosses_accurate: firstMetric(metrics, "crosses_accurate", "accurate_crosses"),
-    accurate_crosses_percentage: firstMetric(metrics, "accurate_crosses_percentage", "successful_crosses_percentage"),
-    long_balls_total: firstMetric(metrics, "long_balls_total", "long_balls"),
-    long_balls_accurate: firstMetric(metrics, "long_balls_accurate", "accurate_long_balls", "long_balls_won", "successful_long_passes"),
-    long_balls_won_percentage: firstMetric(metrics, "long_balls_won_percentage", "successful_long_passes_percentage"),
-    touches: firstMetric(metrics, "touches"),
-    dribble_attempts: dribbleAttempts,
-    dribbles_successful: dribblesSuccessful,
-    dribble_success_rate: firstMetric(metrics, "dribble_success_rate") ?? percentage(dribblesSuccessful, dribbleAttempts),
-    possession_lost: firstMetric(metrics, "possession_lost"),
-    dispossessed: firstMetric(metrics, "dispossessed"),
-    turn_overs: firstMetric(metrics, "turn_over"),
-    fouls_drawn: firstMetric(metrics, "fouls_drawn"),
-    fouls_committed: firstMetric(metrics, "fouls_committed", "fouls"),
-    tackles: firstMetric(metrics, "tackles"),
-    tackles_won: firstMetric(metrics, "tackles_won"),
-    tackles_won_percentage: firstMetric(metrics, "tackles_won_percentage"),
-    interceptions: firstMetric(metrics, "interceptions"),
-    clearances: firstMetric(metrics, "clearances"),
-    blocks: firstMetric(metrics, "blocks"),
-    duels_total: firstMetric(metrics, "duels_total", "duels"),
-    duels_won: firstMetric(metrics, "duels_won"),
-    duels_lost: firstMetric(metrics, "duels_lost"),
-    duels_won_percentage: firstMetric(metrics, "duels_won_percentage"),
-    aerials_total: firstMetric(metrics, "aerials_total", "aerial_duels"),
-    aerials_won: firstMetric(metrics, "aerials_won", "aerial_duels_won"),
-    aerials_lost: firstMetric(metrics, "aerials_lost", "aeriels_lost"),
-    aerials_won_percentage: firstMetric(metrics, "aerials_won_percentage"),
-    ball_recoveries: firstMetric(metrics, "ball_recovery"),
-    saves: firstMetric(metrics, "saves"),
-    goals_conceded: firstMetric(metrics, "goals_conceded"),
-    yellow_cards: firstMetric(metrics, "yellow_cards"),
-    red_cards: firstMetric(metrics, "red_cards"),
+    ...metrics,
     raw_details: details,
     raw_lineup: lineup,
     raw_fixture: fixtureDetail,
@@ -284,67 +223,8 @@ function readDeveloperState(fixture: FixtureDetail) {
   return typeof developerName === "string" ? developerName : null;
 }
 
-function metricKey(detail: JsonRecord) {
-  const type = isRecord(detail.type) ? detail.type : {};
-  const rawName = firstString(type.developer_name, type.code, type.name, detail.developer_name, detail.code, detail.name);
-  if (!rawName) return null;
-  return rawName
-    .toLowerCase()
-    .replaceAll("+", "_plus_")
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-}
-
-function numberFromDetail(detail: JsonRecord) {
-  const data = isRecord(detail.data) ? detail.data : {};
-  const value = isRecord(detail.value) ? detail.value : {};
-  return firstNumber(
-    data.value,
-    data.total,
-    data.count,
-    data.rating,
-    value.value,
-    value.total,
-    value.count,
-    detail.value,
-    detail.total,
-    detail.count
-  );
-}
-
-function firstMetric(metrics: Record<string, number | null>, ...keys: string[]) {
-  for (const key of keys) {
-    const value = metrics[key];
-    if (typeof value === "number") return value;
-  }
-  return null;
-}
-
-function percentage(part: number | null, total: number | null) {
-  if (part === null || total === null || total <= 0) return null;
-  return Number(((part / total) * 100).toFixed(1));
-}
-
-function firstNumber(...values: unknown[]) {
-  for (const value of values) {
-    if (typeof value === "number" && Number.isFinite(value)) return value;
-    if (typeof value === "string" && value.trim() !== "") {
-      const parsed = Number(value);
-      if (Number.isFinite(parsed)) return parsed;
-    }
-  }
-  return null;
-}
-
 function numberOrNull(value: unknown) {
   return firstNumber(value);
-}
-
-function firstString(...values: unknown[]) {
-  for (const value of values) {
-    if (typeof value === "string" && value.trim() !== "") return value;
-  }
-  return null;
 }
 
 function isRecord(value: unknown): value is JsonRecord {

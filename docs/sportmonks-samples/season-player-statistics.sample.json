@@ -1,0 +1,6 @@
+{
+  "endpoint": "statistics/seasons/players/{seasonId}",
+  "captured_from": "public.season_player_statistics.raw",
+  "status": "not_yet_captured_from_direct_endpoint",
+  "note": "Current season_player_statistics rows in production are match_aggregate rows. Run /api/sync/season-statistics after the latest deploy to capture direct Sportmonks detail rows when the token plan returns them."
+}

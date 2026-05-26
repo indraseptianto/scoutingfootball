@@ -1,0 +1,45 @@
+{
+  "endpoint": "fixtures/{id}?include=lineups.details.type",
+  "captured_from": "public.player_match_statistics.raw_fixture/raw_lineup",
+  "sample": {
+    "id": 19707995,
+    "name": "Hull City vs Middlesbrough",
+    "season_id": 25648,
+    "state": {
+      "id": 3,
+      "name": "Half Time",
+      "developer_name": "HT"
+    },
+    "lineup": {
+      "id": 14673954150,
+      "player_id": 8018,
+      "team_id": 7,
+      "details": [
+        {
+          "data": { "value": 49 },
+          "type": { "id": 119, "code": "minutes-played", "developer_name": "MINUTES_PLAYED" }
+        },
+        {
+          "data": { "value": 1 },
+          "type": { "id": 108, "code": "dribble-attempts", "developer_name": "DRIBBLED_ATTEMPTS" }
+        },
+        {
+          "data": { "value": 100 },
+          "type": { "id": 27268, "code": "tackles-won-percentage", "developer_name": "TACKLES_WON_PERCENTAGE" }
+        },
+        {
+          "data": { "value": 18 },
+          "type": { "id": 116, "code": "accurate-passes", "developer_name": "ACCURATE_PASSES" }
+        },
+        {
+          "data": { "value": 24 },
+          "type": { "id": 80, "code": "passes", "developer_name": "PASSES" }
+        },
+        {
+          "data": { "value": 75 },
+          "type": { "id": 1584, "code": "accurate-passes-percentage", "developer_name": "ACCURATE_PASSES_PERCENTAGE" }
+        }
+      ]
+    }
+  }
+}
