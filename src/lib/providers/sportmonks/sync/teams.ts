@@ -5,8 +5,8 @@ import { sportmonksEndpoints } from "../endpoints";
 import { normalizeTeam } from "../normalize/teams";
 import { finishSyncLog, startSyncLog, type SyncJobResult } from "./core";
 
-export async function syncTeams() {
-  const targetSeasonIds = await getTargetCurrentSeasonIds();
+export async function syncTeams(allSeasons = false) {
+  const targetSeasonIds = allSeasons ? await getAllTargetSeasonIds() : await getTargetCurrentSeasonIds();
   if (targetSeasonIds.length === 0) {
     return {
       entity: "teams",
@@ -27,6 +27,32 @@ export async function syncTeams() {
     recordsProcessed: results.reduce((sum, result) => sum + result.recordsProcessed, 0),
     error: failed?.error
   } satisfies SyncJobResult;
+}
+
+export async function getAllTargetSeasonIds() {
+  const supabase = getSupabaseServiceClient();
+  const leagueNames = getTargetLeagueNames();
+  const { data: leagues, error: leaguesError } = await supabase
+    .from("leagues")
+    .select("sportmonks_id,name")
+    .in("name", leagueNames);
+
+  if (leaguesError) throw leaguesError;
+  const leagueIds = ((leagues ?? []) as Array<{ sportmonks_id: string | number }>).map((league) => Number(league.sportmonks_id)).filter((id): id is number => Boolean(id));
+  if (leagueIds.length === 0) return [];
+
+  const { data: seasons, error: seasonsError } = await supabase
+    .from("seasons")
+    .select("sportmonks_id,league_sportmonks_id,name,starting_at,ending_at")
+    .in("league_sportmonks_id", leagueIds)
+    .gte("starting_at", "2023-01-01");
+
+  if (seasonsError) throw seasonsError;
+
+  return (seasons ?? []).map((season) => ({
+    seasonId: Number(season.sportmonks_id),
+    leagueId: Number(season.league_sportmonks_id)
+  }));
 }
 
 async function syncTeamsForSeason(seasonId: number, leagueId: number): Promise<SyncJobResult> {
@@ -79,7 +105,7 @@ export async function getTargetCurrentSeasonIds() {
     .in("name", leagueNames);
 
   if (leaguesError) throw leaguesError;
-  const leagueIds = (leagues ?? []).map((league) => Number(league.sportmonks_id)).filter(Boolean);
+  const leagueIds = ((leagues ?? []) as Array<{ sportmonks_id: string | number }>).map((league) => Number(league.sportmonks_id)).filter((id): id is number => Boolean(id));
   if (leagueIds.length === 0) return [];
 
   const { data: seasons, error: seasonsError } = await supabase

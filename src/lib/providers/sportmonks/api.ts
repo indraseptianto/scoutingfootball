@@ -33,5 +33,11 @@ export const sportmonksApi = {
   transfersByTeam: (teamId: number | string) => sportmonksFetch(sportmonksEndpoints.transfersByTeam(teamId)),
   countries: () => sportmonksFetch(sportmonksEndpoints.countries),
   positions: () => sportmonksFetch(sportmonksEndpoints.types),
-  types: () => sportmonksFetch(sportmonksEndpoints.types)
+  types: () => sportmonksFetch(sportmonksEndpoints.types),
+  fixtureEvents: (fixtureId: number | string) => sportmonksFetch(sportmonksEndpoints.fixtureEvents(fixtureId)),
+  fixtureLineups: (fixtureId: number | string) => sportmonksFetch(sportmonksEndpoints.fixtureLineups(fixtureId)),
+  coaches: () => sportmonksFetch(sportmonksEndpoints.coaches),
+  coach: (coachId: number | string) => sportmonksFetch(sportmonksEndpoints.coach(coachId)),
+  teamStatistics: (teamId: number | string, seasonId: number | string) =>
+    sportmonksFetch(sportmonksEndpoints.teamStatistics(teamId, seasonId))
 };

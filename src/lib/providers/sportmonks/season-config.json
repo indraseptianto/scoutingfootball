@@ -1,0 +1,55 @@
+{
+  "leagues": {
+    "Premier League": {
+      "id": 8,
+      "country": "England"
+    },
+    "Championship": {
+      "id": 9,
+      "country": "England"
+    },
+    "League One": {
+      "id": 12,
+      "country": "England"
+    },
+    "League Two": {
+      "id": 14,
+      "country": "England"
+    },
+    "La Liga": {
+      "id": 564,
+      "country": "Spain"
+    }
+  },
+  "seasons": {
+    "2023/2024": {
+      "id": 21646,
+      "league_id": 8
+    },
+    "2024/2025": {
+      "id": 23614,
+      "league_id": 8
+    },
+    "2025/2026": {
+      "id": 25583,
+      "league_id": 8
+    }
+  },
+  "target_seasons": [
+    21646,
+    23614,
+    25583,
+    21689,
+    23672,
+    25648,
+    21690,
+    23671,
+    25649,
+    21691,
+    23673,
+    25650,
+    21694,
+    23621,
+    25659
+  ]
+}

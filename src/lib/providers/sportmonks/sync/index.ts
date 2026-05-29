@@ -1,4 +1,7 @@
+import { syncCoaches } from "./coaches";
 import { syncCountries } from "./countries";
+import { syncFixtureEvents } from "./fixture-events";
+import { syncFixtureLineups } from "./fixture-lineups";
 import { syncFixtures } from "./fixtures";
 import { syncLeagues } from "./leagues";
 import { syncPlayers } from "./players";
@@ -8,6 +11,7 @@ import { syncSeasonStatistics } from "./season-statistics";
 import { syncSquads } from "./squads";
 import { syncStandings } from "./standings";
 import { syncStatistics } from "./statistics";
+import { syncTeamStatistics } from "./team-statistics";
 import { syncTeams } from "./teams";
 import { syncTransfers } from "./transfers";
 
@@ -22,6 +26,10 @@ export const syncJobs = {
   fixtures: syncFixtures,
   standings: syncStandings,
   transfers: syncTransfers,
+  coaches: syncCoaches,
+  "fixture-events": syncFixtureEvents,
+  "fixture-lineups": syncFixtureLineups,
+  "team-statistics": syncTeamStatistics,
   "season-statistics": syncSeasonStatistics,
   statistics: syncStatistics
 } as const;

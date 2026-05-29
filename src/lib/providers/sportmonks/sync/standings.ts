@@ -1,36 +1,25 @@
 import { sportmonksEndpoints } from "../endpoints";
 import { normalizeStanding } from "../normalize/standings";
-import { runSportmonksSync, type SyncJobResult } from "./core";
-import { getTargetCurrentSeasonIds } from "./teams";
+import { runSportmonksSync } from "./core";
 
-export async function syncStandings(seasonId = process.env.SPORTMONKS_DEFAULT_SEASON_ID) {
-  if (seasonId) {
-    return runSportmonksSync({
-      entity: "standings",
+const TARGET_SEASONS = [
+  21646, 23614, 25583,  // PL
+  21689, 23672, 25648,  // Championship
+  21690, 23671, 25649,  // League One
+  21691, 23673, 25650,  // League Two
+  21694, 23621, 25659,  // La Liga
+];
+
+export async function syncStandings() {
+  const results = [];
+  for (const seasonId of TARGET_SEASONS) {
+    const result = await runSportmonksSync({
+      entity: `standings:season:${seasonId}`,
       endpoint: sportmonksEndpoints.standingsBySeason(seasonId),
       table: "standings",
-      normalize: (row) => normalizeStanding(row, seasonId)
+      normalize: normalizeStanding
     });
+    results.push(result);
   }
-
-  const seasons = await getTargetCurrentSeasonIds();
-  const results: SyncJobResult[] = [];
-  for (const season of seasons) {
-    results.push(
-      await runSportmonksSync({
-        entity: `standings:${season.seasonId}`,
-        endpoint: sportmonksEndpoints.standingsBySeason(season.seasonId),
-        table: "standings",
-        normalize: (row) => normalizeStanding(row, season.seasonId)
-      })
-    );
-  }
-
-  const failed = results.find((result) => result.status === "failed");
-  return {
-    entity: "standings",
-    status: failed ? "failed" : "success",
-    recordsProcessed: results.reduce((sum, result) => sum + result.recordsProcessed, 0),
-    error: failed?.error
-  } satisfies SyncJobResult;
+  return results;
 }
