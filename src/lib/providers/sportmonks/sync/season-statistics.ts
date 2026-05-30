@@ -18,8 +18,8 @@ export async function syncSeasonStatistics(): Promise<SyncJobResult[]> {
     const logId = await startSyncLog(`season-statistics:${seasonId}`);
     let recordsProcessed = 0;
     try {
-      const response = await sportmonksFetch(sportmonksEndpoints.playerSeasonStats(seasonId));
-      const rows = (response.data ?? []).map((item: any) => ({
+      const response = await sportmonksFetch<any[]>(sportmonksEndpoints.playerSeasonStats(seasonId));
+      const rows = (Array.isArray(response.data) ? response.data : []).map((item: any) => ({
         sportmonks_id: item.id,
         season_sportmonks_id: seasonId,
         player_sportmonks_id: item.player_id,

@@ -32,7 +32,8 @@ export const sportmonksEndpoints = {
   fixtureLineups: (fixtureId: number | string) => `/fixtures/${fixtureId}/lineups`,
   coaches: "/coaches",
   coach: (coachId: number | string) => `/coaches/${coachId}`,
-  teamStatistics: (teamId: number | string) => `/statistics/seasons/teams/${teamId}`
+  teamStatistics: (teamId: number | string, seasonId?: number | string) =>
+    seasonId ? `/statistics/seasons/teams/${teamId}/${seasonId}` : `/statistics/seasons/teams/${teamId}`
 } as const;
 
 export const sportmonksIncludes = {
