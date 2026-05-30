@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 const navLinks = [
   ["Hidden Gems", "/hidden-gems"],
   ["Scouting", "/scouting"],
+  ["Briefs", "/briefs"],
   ["Recommendations", "/recommendations"],
   ["Shortlist", "/shortlist"]
 ];

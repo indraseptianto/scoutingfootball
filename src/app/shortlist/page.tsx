@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { buildRecruitmentScore, formatDecimal, getRecruitmentDataset, per90, playerAge } from "@/lib/recruitment-data";
 import { getSupabaseServiceClient } from "@/lib/supabase/server";
 import { addPlayerToShortlist, addShortlistNote, getOrCreateDefaultShortlist, moveShortlistPlayer } from "./actions";
+import { listRecruitmentBriefs } from "@/lib/recruitment-briefs";
 
 const stages = [
   { key: "watchlist", title: "Watchlist" },
@@ -18,6 +19,8 @@ type BoardCard = {
   stage: string;
   latest_note: string | null;
   note_count: number;
+  recruitment_brief_name: string | null;
+  recruitment_role_archetype: string | null;
   player: {
     sportmonks_id: number;
     display_name: string;
@@ -30,8 +33,15 @@ type BoardCard = {
 
 export const dynamic = "force-dynamic";
 
-export default async function ShortlistPage() {
-  const [board, dataset] = await Promise.all([getShortlistBoard(), getRecruitmentDataset(220)]);
+type ShortlistSearchParams = {
+  brief?: string;
+};
+
+export default async function ShortlistPage({ searchParams }: { searchParams: Promise<ShortlistSearchParams> }) {
+  const params = await searchParams;
+  const activeBriefId = typeof params.brief === "string" ? params.brief.trim() : "";
+  const [board, dataset, briefs] = await Promise.all([getShortlistBoard(activeBriefId), getRecruitmentDataset(220), listRecruitmentBriefs()]);
+  const activeBrief = briefs.find((brief) => brief.id === activeBriefId) ?? null;
   const candidates = dataset.players
     .filter((player) => !board.cards.some((card) => card.player.sportmonks_id === player.sportmonks_id))
     .map((player) => ({ player, score: buildRecruitmentScore(player) }))
@@ -48,11 +58,32 @@ export default async function ShortlistPage() {
           <p className="mt-2 max-w-2xl text-muted">
             Persistent shortlist with stages, notes, and CSV export. The workspace board can later be scoped to club members after auth/RBAC.
           </p>
+          {activeBrief ? (
+            <div className="mt-4 inline-flex flex-wrap items-center gap-2 rounded-md border border-accent/25 bg-accent-soft px-3 py-2 text-sm">
+              <span className="font-semibold text-accent">Scoped brief:</span>
+              <span>{activeBrief.name}</span>
+              <span className="text-muted">{activeBrief.target_position} - {activeBrief.role_archetype}</span>
+            </div>
+          ) : null}
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="secondary" asChild><a href={activeBriefId ? `/recommendations?brief=${encodeURIComponent(activeBriefId)}` : "/recommendations"}><Star size={16} /> Back to recommendations</a></Button>
           <Button variant="secondary" asChild><a href="/hidden-gems"><Star size={16} /> Add from gems</a></Button>
           <Button asChild><a href="/api/shortlist/export"><Download size={16} /> Export CSV</a></Button>
         </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2 text-sm">
+        <a href="/shortlist" className={`rounded-md border px-3 py-2 ${!activeBriefId ? "border-accent/30 bg-accent-soft text-accent" : "border-border bg-black/20 text-muted"}`}>All shortlist items</a>
+        {briefs.slice(0, 8).map((brief) => (
+          <a
+            key={brief.id}
+            href={`/shortlist?brief=${encodeURIComponent(brief.id)}`}
+            className={`rounded-md border px-3 py-2 ${activeBriefId === brief.id ? "border-accent/30 bg-accent-soft text-accent" : "border-border bg-black/20 text-muted"}`}
+          >
+            {brief.name}
+          </a>
+        ))}
       </div>
 
       {board.error ? <div className="mt-6 rounded-md border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-100">{board.error}</div> : null}
@@ -81,6 +112,12 @@ export default async function ShortlistPage() {
                       </div>
                       <span className="font-mono text-accent">{card.player.hidden_gem_score}</span>
                     </div>
+                    {(card.recruitment_brief_name || card.recruitment_role_archetype) ? (
+                      <div className="mt-3 flex flex-wrap gap-2 text-xs">
+                        {card.recruitment_brief_name ? <span className="rounded-md border border-accent/30 bg-accent-soft px-2 py-1 text-accent">{card.recruitment_brief_name}</span> : null}
+                        {card.recruitment_role_archetype ? <span className="rounded-md border border-border bg-white/[0.04] px-2 py-1 text-muted">{card.recruitment_role_archetype}</span> : null}
+                      </div>
+                    ) : null}
                     <div className="mt-4 flex flex-wrap gap-2">
                       <MoveForm id={card.id} currentStage={card.stage} />
                     </div>
@@ -125,6 +162,9 @@ export default async function ShortlistPage() {
               <form action={addPlayerToShortlist} className="mt-4">
                 <input type="hidden" name="sportmonksId" value={player.sportmonks_id} />
                 <input type="hidden" name="stage" value="watchlist" />
+                <input type="hidden" name="recruitmentBriefId" value={activeBrief?.id ?? ""} />
+                <input type="hidden" name="recruitmentBriefName" value={activeBrief?.name ?? ""} />
+                <input type="hidden" name="recruitmentRoleArchetype" value={activeBrief?.role_archetype ?? ""} />
                 <Button className="w-full" type="submit"><Plus size={16} /> Add</Button>
               </form>
             </div>
@@ -156,15 +196,20 @@ function Mini({ label, value }: { label: string; value: string }) {
   );
 }
 
-async function getShortlistBoard() {
+async function getShortlistBoard(activeBriefId?: string) {
   try {
     const supabase = getSupabaseServiceClient();
     const shortlist = await getOrCreateDefaultShortlist();
-    const { data: shortlistPlayers, error } = await supabase
+    let query = supabase
       .from("shortlist_players")
-      .select("id,stage,player_id,created_at")
-      .eq("shortlist_id", shortlist.id)
-      .order("created_at", { ascending: false });
+      .select("id,stage,player_id,created_at,recruitment_brief_id,recruitment_brief_name,recruitment_role_archetype")
+      .eq("shortlist_id", shortlist.id);
+
+    if (activeBriefId) {
+      query = query.eq("recruitment_brief_id", activeBriefId);
+    }
+
+    const { data: shortlistPlayers, error } = await query.order("created_at", { ascending: false });
 
     if (error) throw error;
 
@@ -202,6 +247,8 @@ async function getShortlistBoard() {
           stage: String(row.stage),
           latest_note: notes[0]?.note ?? null,
           note_count: notes.length,
+          recruitment_brief_name: typeof row.recruitment_brief_name === "string" ? row.recruitment_brief_name : null,
+          recruitment_role_archetype: typeof row.recruitment_role_archetype === "string" ? row.recruitment_role_archetype : null,
           player: {
             sportmonks_id: Number(player.sportmonks_id),
             display_name: String(player.display_name),

@@ -8,6 +8,9 @@ const DEFAULT_SHORTLIST_NAME = "ScoutFlow Main Shortlist";
 export async function addPlayerToShortlist(formData: FormData) {
   const sportmonksId = Number(formData.get("sportmonksId"));
   const stage = String(formData.get("stage") ?? "watchlist");
+  const recruitmentBriefId = String(formData.get("recruitmentBriefId") ?? "").trim() || null;
+  const recruitmentBriefName = String(formData.get("recruitmentBriefName") ?? "").trim() || null;
+  const recruitmentRoleArchetype = String(formData.get("recruitmentRoleArchetype") ?? "").trim() || null;
   if (!sportmonksId) return;
 
   const supabase = getSupabaseServiceClient();
@@ -20,18 +23,34 @@ export async function addPlayerToShortlist(formData: FormData) {
 
   if (!player?.id) return;
 
-  await supabase
+  const { data: shortlistPlayer } = await supabase
     .from("shortlist_players")
     .upsert(
       {
         shortlist_id: shortlist.id,
         player_id: player.id,
-        stage
+        stage,
+        recruitment_brief_id: recruitmentBriefId,
+        recruitment_brief_name: recruitmentBriefName,
+        recruitment_role_archetype: recruitmentRoleArchetype
       },
       { onConflict: "shortlist_id,player_id" }
-    );
+    )
+    .select("id")
+    .maybeSingle();
+
+  if (shortlistPlayer?.id && recruitmentBriefName) {
+    await supabase.from("shortlist_notes").insert({
+      shortlist_player_id: shortlistPlayer.id,
+      note: recruitmentRoleArchetype
+        ? `Added from recruitment brief: ${recruitmentBriefName} (${recruitmentRoleArchetype}).`
+        : `Added from recruitment brief: ${recruitmentBriefName}.`
+    });
+  }
 
   revalidatePath("/shortlist");
+  revalidatePath("/recommendations");
+  revalidatePath("/briefs");
 }
 
 export async function moveShortlistPlayer(formData: FormData) {
